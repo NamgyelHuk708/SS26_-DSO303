@@ -1,4 +1,4 @@
-# AWS Practical Laboratory Report — Lab 1: Identity and Access Management (IAM)
+# AWS Practical Laboratory Report Lab 1: Identity and Access Management (IAM)
 
 ---
 
