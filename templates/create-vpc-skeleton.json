@@ -9,7 +9,7 @@
     "Ipv6CidrBlockNetworkBorderGroup": "",
     "TagSpecifications": [
         {
-            "ResourceType": "instance-connect-endpoint",
+            "ResourceType": "route-server",
             "Tags": [
                 {
                     "Key": "",

@@ -20,3 +20,41 @@ this user/group).
 ## Step 33 — snapshot
 `floci snapshot save` returned HTTP 400 (unsupported on this Floci build).
 Used the tar fallback instead: ~/floci-data-lab-01.tar.gz
+
+## Your Turn — Step 7: storage modes
+Q: If --persist mounts a directory correctly, why is the directory almost
+   empty in memory mode?
+A: --persist only tells Floci WHERE on the host to mount /app/data — it does
+   not change FLOCI_STORAGE_MODE. In memory mode, Floci keeps all state in
+   RAM and only writes minimal/no data to disk, because it assumes its own
+   state is disposable. It also deletes its own Docker volumes on teardown.
+   So the directory exists (the mount worked) but stays empty because the
+   storage MODE, not the mount, controls what actually gets written to it.
+
+## Your Turn — Step 12: aws configure list
+The "Location" column shows where each value came from. The access key and
+secret key show "shared-credentials-file" because they were written into
+~/.aws/credentials by `aws configure set`, which always stores secrets in
+that file (never in ~/.aws/config), regardless of profile.
+
+## Your Turn — Step 17: output formats
+table and text return the same underlying data, just formatted differently.
+For scripts, `text` is the right choice — it has no quotes/braces/borders,
+so it can be captured directly into a shell variable with $(...) without
+needing to parse JSON or strip table borders.
+
+## Your Turn — Step 24: create-vpc skeleton
+The most important parameter is CidrBlock — it defines the IP address range
+of the VPC and cannot be changed after creation. Everything else (tenancy,
+IPv6, tags) is optional or can be modified later.
+
+## Your Turn — Step 32: prediction for usms-audit-01
+Prediction BEFORE running:
+- ec2:CreateVpc      -> implicitDeny (auditors only have ReadOnlyAccess /
+                        USMSReadOnly, which contains no write actions)
+- ec2:DescribeVpcs   -> allowed (ReadOnlyAccess includes ec2:Describe*,
+                        and DescribeVpcs matches that wildcard)
+
+Actual result: (paste table output here)
+Match/mismatch explanation: (note if it matches your prediction, or if it's
+another instance of the simulator not evaluating group-attached policies)
