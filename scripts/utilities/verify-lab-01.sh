@@ -53,7 +53,7 @@ for p in USMSDeveloperBase USMSStudentDataReadWrite USMSAssumeAppRoles USMSLambd
     "aws iam list-policies --scope Local --query \"Policies[?PolicyName=='$p'].Arn|[0]\" --output text | grep -q arn:"
 done
 check "USMSDeveloperBase default version is v2" \
-  "test \"\$(aws iam get-policy --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/USMSDeveloperBase --query 'Policy.DefaultVersionId' --output text)\" = v2"
+  "test \"\$(aws iam get-policy --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/USMSDeveloperBase --query 'Policy.DefaultVersionId' --output text)\" = v3"
 check "inline policy on usms-dev-01" \
   "aws iam get-user-policy --user-name usms-dev-01 --policy-name USMSSelfManageCredentials"
 
