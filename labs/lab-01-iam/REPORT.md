@@ -1,4 +1,4 @@
-# AWS Practical Laboratory Report Lab 1: Identity and Access Management (IAM)
+# AWS Practical Laboratory Report — Lab 1: Identity and Access Management (IAM)
 
 ---
 
@@ -54,101 +54,77 @@ The Your Turn practice tasks placed through the lab were also completed, along w
 ### 5.1 Environment Setup (Part A)
 
 **Docker / Compose check**
-
 ![Step 2](LAB_1(image)/step_2.png)
 
 **Project folder structure created**
-
 ![Step 5](LAB_1(image)/step_5.png)
 
 **.gitignore and first Git commit**
-
 ![Step 6](LAB_1(image)/step_6.png)
 
 **Floci started via Docker Compose**
-
 ![Step 9](LAB_1(image)/step_9.png)
 
 **AWS CLI profile configured**
-
 ![Step 12](LAB_1(image)/step_12.png)
 
 **whoami.sh confirming identity and account**
-
 ![Step 13](LAB_1(image)/step_13.png)
 
 **Isolation test, stopping Floci breaks the CLI**
-
 ![Step 14.3](LAB_1(image)/step_14.3.png)
 
 **Persistence test, user survived a container restart**
-
 ![Step 14.4](LAB_1(image)/step_14.4.png)
 
 **Storage diagnostics, all checks passed**
-
 ![Step 15.2](LAB_1(image)/step_15.2.png)
 
 **Part A wrap up / commit**
-
 ![Step 15](LAB_1(image)/step_15.png)
 
 ### 5.2 IAM Foundation (Part B)
 
 **Groups created (usms-admins, usms-developers, usms-auditors)**
-
 ![Step 18](LAB_1(image)/step_18.png)
 
 **Users created and tagged**
-
 ![Step 19](LAB_1(image)/step_19.png)
 
 **AWS managed policy attached to auditors**
-
 ![Step 21](LAB_1(image)/step_21.png)
 
 **Developer base policy created and attached**
-
 ![Step 22](LAB_1(image)/step_22.png)
 
 **S3 student data policy created**
-
 ![Step 23](LAB_1(image)/step_23.png)
 
 **Full identity inspection of usms-dev-01**
-
 ![Step 26](LAB_1(image)/step_26.png)
 
 **Policy version bumped (v1 to v2)**
-
 ![Step 27](LAB_1(image)/step_27.png)
 
 **EC2 role, trust policy, and instance profile**
-
 ![Step 28](LAB_1(image)/step_28.png)
 
 **Lambda execution role**
-
 ![Step 29](LAB_1(image)/step_29.png)
 
 **Developer role assume role permission attached**
-
 ![Step 30.2](LAB_1(image)/step_30.2.png)
 
 **Temporary credentials obtained via STS**
-
 ![Step 30](LAB_1(image)/step_30.png)
 
 **Access key created and confirmed safe from Git**
-
 ![Step 31](LAB_1(image)/step_31.png)
 
 **Final commit and configs/lab-01.env saved**
-
 ![Step 33](LAB_1(image)/step_33.png)
 
 **verify-lab-01.sh, final end to end verification**
-
 ![Step 34](LAB_1(image)/step_34.png)
 
 ### 5.3 Your Turn Practice Tasks
@@ -156,23 +132,18 @@ The Your Turn practice tasks placed through the lab were also completed, along w
 These were small extra tasks placed through the lab to practice a specific command or idea.
 
 **Step 12, aws configure list, checking where each config value comes from**
-
 ![Step 12 Your Turn](LAB_1(image)/step_12(turn).png)
 
 **Step 17, comparing list roles output formats**
-
 ![Step 17 Your Turn](LAB_1(image)/step_17(turn).png)
 
 **Step 19, creating a 4th practice user (usms-intern-01)**
-
 ![Step 19 Your Turn](LAB_1(image)/step_19(turn).png)
 
 **Step 24, generating a CLI skeleton for create vpc**
-
 ![Step 24 Your Turn](LAB_1(image)/step_24(turn).png)
 
 **Step 32, predicting and testing policy simulator results for the auditor**
-
 ![Step 32 Your Turn](LAB_1(image)/step_32(turn).png)
 
 ### 5.4 Independent Lab Exercises (Section 9)
@@ -197,7 +168,10 @@ Designed a least privilege policy for a backup job that can copy and verify file
 
 ![Exercise 4](LAB_1(image)/section_9(4).png)
 
-Exercise 5 was not attempted for this submission due to time.
+**Exercise 5**
+Checked which EC2 actions the developer policy was missing for Lab 2, added the two missing actions (ec2:CreateNatGateway, ec2:AllocateAddress) as a new policy version, and set it as default.
+
+![Exercise 5](LAB_1(image)/section_9(5).png)
 
 ## 6. Analysis and Discussion
 
