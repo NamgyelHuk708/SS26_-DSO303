@@ -142,9 +142,11 @@ Even after correctly tagging the private NACL, filtering `describe-network-acls`
 - After regenerating the env file, `USMS_PRIVATE_SUBNET_B` held a real subnet ID instead of `None`
 - `verify-lab-02.sh` passed the "no empty values" check
 
-**Remaining failures (expected/explained):**
-1. The group-referenced SG rule issue from Exercise 2 (a confirmed Floci limitation)
-2. A check flagging `outputs/.gitkeep` as a tracked secret — a harmless placeholder file, not an actual secret
+**Final result:** `PASS=32 FAIL=1` — the only remaining failure is the confirmed
+group-referenced security group rule limitation from Exercise 2 (Floci does not
+persist a rule's UserIdGroupPairs source, even at write time). The `.gitkeep`
+false positive was resolved by removing it from Git's index, since nothing under
+`outputs/` needs to be tracked.
 
 ![Exercise 5 Before](LAB_2(image)/exercise_5(before).png)
 ![Exercise 5 After](LAB_2(image)/exercise_5(after).png)
