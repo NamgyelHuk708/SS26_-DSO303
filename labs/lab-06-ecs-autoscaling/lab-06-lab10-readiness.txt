@@ -1,0 +1,16 @@
+# USMS Lab 06 -> Lab 10 readiness - generated 2026-10-11T12:26:48Z
+
+Scaling history file : outputs/lab-06-scaling-history.json (3065 bytes)
+Scale-out latency    : 18.4s measured with update-service 2->4 on Floci
+                       (substitute method); AWS documents ~20-60 s per Fargate task
+Task role ARN        : arn:aws:iam::000000000000:role/usms-ecs-task-role
+Bucket ARNs in policy: arn:aws:s3:::usms-student-data arn:aws:s3:::usms-student-data/*
+Permissions granted  : s3:GetObject, s3:PutObject and s3:ListBucket on that bucket, with s3:DeleteBucket denied
+
+head-bucket output   : 
+An error occurred (404) when calling the HeadBucket operation: Not Found
+head-bucket exit code: 255
+
+After Lab 10 Step 1 creates usms-student-data, the same head-bucket returns exit code 0,
+and at that same instant usms-ecs-task-role (and usms-ec2-app-role) can actually read and
+write the bucket - with no change to either role or the policy.

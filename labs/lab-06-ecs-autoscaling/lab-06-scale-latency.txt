@@ -1,0 +1,3 @@
+start=2026-10-11T12:24:24Z end=2026-10-11T12:24:43Z from=2 to=4 elapsed=18.4s
+method: update-service --desired-count (substitute; register-scalable-target unavailable on Floci)
+AWS-documented Fargate start: ~20-60 s per task
