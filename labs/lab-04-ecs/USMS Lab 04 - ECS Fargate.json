@@ -1,0 +1,827 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-10-11T12:00:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 04 - ECS Fargate enrolment service",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS Region \u00b7 us-east-1 (Floci account 000000000000)",
+          "boundaryType": "region",
+          "width": 1580,
+          "height": 980
+        },
+        "style": {
+          "width": 1580,
+          "height": 980
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-vpc",
+        "type": "boundaryNode",
+        "position": {
+          "x": 200,
+          "y": 60
+        },
+        "data": {
+          "label": "usms-vpc \u00b7 10.0.0.0/16",
+          "boundaryType": "vpc",
+          "width": 1060,
+          "height": 880,
+          "cidr": "10.0.0.0/16"
+        },
+        "style": {
+          "width": 1060,
+          "height": 880
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -2
+      },
+      {
+        "id": "box-az-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 220,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1a",
+          "boundaryType": "az",
+          "width": 500,
+          "height": 820
+        },
+        "style": {
+          "width": 500,
+          "height": 820
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-az-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 740,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1b",
+          "boundaryType": "az",
+          "width": 500,
+          "height": 820
+        },
+        "style": {
+          "width": 500,
+          "height": 820
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-pub-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 240,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-a \u00b7 10.0.1.0/24 (usms-public-rt \u2192 usms-igw)",
+          "boundaryType": "public_subnet",
+          "width": 460,
+          "height": 300,
+          "cidr": "10.0.1.0/24"
+        },
+        "style": {
+          "width": 460,
+          "height": 300
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-pub-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 760,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-b \u00b7 10.0.2.0/24 (usms-public-rt \u2192 usms-igw)",
+          "boundaryType": "public_subnet",
+          "width": 460,
+          "height": 300,
+          "cidr": "10.0.2.0/24"
+        },
+        "style": {
+          "width": 460,
+          "height": 300
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 240,
+          "y": 480
+        },
+        "data": {
+          "label": "usms-private-subnet-a \u00b7 10.0.3.0/24 (usms-private-rt \u2192 usms-nat)",
+          "boundaryType": "private_subnet",
+          "width": 460,
+          "height": 420,
+          "cidr": "10.0.3.0/24"
+        },
+        "style": {
+          "width": 460,
+          "height": 420
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 760,
+          "y": 480
+        },
+        "data": {
+          "label": "usms-private-subnet-b \u00b7 10.0.4.0/24 (usms-private-rt \u2192 usms-nat)",
+          "boundaryType": "private_subnet",
+          "width": 460,
+          "height": 420,
+          "cidr": "10.0.4.0/24"
+        },
+        "style": {
+          "width": 460,
+          "height": 420
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "sg-app",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1290,
+          "y": 100
+        },
+        "data": {
+          "label": "Security group \u00b7 usms-app-sg (web tier)",
+          "boundaryType": "security_group",
+          "width": 270,
+          "height": 130,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTP from the internet"
+              },
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS from the internet"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "22",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.0/16"
+                },
+                "description": "SSH from inside the VPC"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "default allow-all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 270,
+          "height": 130
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-db",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1290,
+          "y": 260
+        },
+        "data": {
+          "label": "Security group \u00b7 usms-db-sg (data tier)",
+          "boundaryType": "security_group",
+          "width": 270,
+          "height": 130,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "SQL",
+                "portRange": "5432",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-app"
+                },
+                "description": "PostgreSQL from usms-app-sg only"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "default allow-all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 270,
+          "height": 130
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-enrolment",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1290,
+          "y": 420
+        },
+        "data": {
+          "label": "Security group \u00b7 usms-enrolment-sg (Lab 04)",
+          "boundaryType": "security_group",
+          "width": 270,
+          "height": 130,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-app"
+                },
+                "description": "HTTP from usms-app-sg only - the web tier is the only caller of the enrolment API"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "default allow-all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 270,
+          "height": 130
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "node-students",
+        "type": "serviceNode",
+        "position": {
+          "x": 30,
+          "y": 200
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Students (browser)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "node-igw",
+        "type": "serviceNode",
+        "position": {
+          "x": 140,
+          "y": 330
+        },
+        "data": {
+          "serviceId": "internet_gateway",
+          "label": "usms-igw",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "Attached to usms-vpc (Lab 02). Default route 0.0.0.0/0 of usms-public-rt."
+        }
+      },
+      {
+        "id": "node-web",
+        "type": "serviceNode",
+        "position": {
+          "x": 300,
+          "y": 190
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-web-01 \u00b7 EC2 t3.micro (portal)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-app"
+          ],
+          "notes": "Lab 03. Elastic IP usms-web-eip, instance profile usms-ec2-app-profile (usms-ec2-app-role -> USMSStudentDataReadWrite), data volume usms-web-data-vol (gp3 8 GiB). Calls the enrolment tasks on HTTP:80."
+        }
+      },
+      {
+        "id": "node-nat",
+        "type": "serviceNode",
+        "position": {
+          "x": 520,
+          "y": 320
+        },
+        "data": {
+          "serviceId": "nat_gateway",
+          "label": "usms-nat (Elastic IP)",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": false,
+          "notes": "Lab 02. Only NAT gateway - tasks in both private subnets pull their image through it (single-AZ NAT is a known SPOF)."
+        }
+      },
+      {
+        "id": "node-task-a",
+        "type": "serviceNode",
+        "position": {
+          "x": 300,
+          "y": 540
+        },
+        "data": {
+          "serviceId": "ecs",
+          "label": "usms-enrolment-svc \u00b7 Fargate task 1 (us-east-1a)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-enrolment"
+          ],
+          "customConfig": {
+            "ecs": {
+              "launchType": "FARGATE",
+              "networkMode": "awsvpc",
+              "desiredCount": 1,
+              "runningCount": 1
+            },
+            "assignPublicIp": false,
+            "cluster": "usms-ecs-cluster",
+            "service": "usms-enrolment-svc",
+            "taskDefinition": "usms-enrolment:2",
+            "container": "enrolment-api (public.ecr.aws/nginx/nginx:stable-alpine) :80",
+            "cpuMemory": "256 CPU / 1024 MiB",
+            "executionRole": "usms-ecs-exec-role (USMSECSTaskExecution)",
+            "taskRole": "usms-ecs-task-role (USMSStudentDataReadWrite)",
+            "logGroup": "/usms/ecs/enrolment"
+          },
+          "notes": "One of the 2 tasks of usms-enrolment-svc (service desiredCount 2, one task per AZ). awsvpc ENI in private subnet a, no public IP."
+        }
+      },
+      {
+        "id": "node-task-b",
+        "type": "serviceNode",
+        "position": {
+          "x": 820,
+          "y": 540
+        },
+        "data": {
+          "serviceId": "ecs",
+          "label": "usms-enrolment-svc \u00b7 Fargate task 2 (us-east-1b)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-B",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-enrolment"
+          ],
+          "customConfig": {
+            "ecs": {
+              "launchType": "FARGATE",
+              "networkMode": "awsvpc",
+              "desiredCount": 1,
+              "runningCount": 1
+            },
+            "assignPublicIp": false,
+            "cluster": "usms-ecs-cluster",
+            "service": "usms-enrolment-svc",
+            "taskDefinition": "usms-enrolment:2",
+            "container": "enrolment-api (public.ecr.aws/nginx/nginx:stable-alpine) :80",
+            "cpuMemory": "256 CPU / 1024 MiB",
+            "executionRole": "usms-ecs-exec-role (USMSECSTaskExecution)",
+            "taskRole": "usms-ecs-task-role (USMSStudentDataReadWrite)",
+            "logGroup": "/usms/ecs/enrolment"
+          },
+          "notes": "One of the 2 tasks of usms-enrolment-svc (service desiredCount 2, one task per AZ). awsvpc ENI in private subnet b, no public IP."
+        }
+      },
+      {
+        "id": "node-db",
+        "type": "serviceNode",
+        "position": {
+          "x": 300,
+          "y": 760
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-db-01 \u00b7 EC2 t3.micro (PostgreSQL)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-db"
+          ],
+          "notes": "Lab 03. No public IP, no instance profile. Admits 5432 from usms-app-sg only."
+        }
+      },
+      {
+        "id": "node-s3ep",
+        "type": "serviceNode",
+        "position": {
+          "x": 1000,
+          "y": 760
+        },
+        "data": {
+          "serviceId": "s3_gateway_endpoint",
+          "label": "usms-s3-endpoint (gateway, on usms-private-rt)",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "Lab 02. Prefix-list route on usms-private-rt; S3 traffic from the private subnets stays on the AWS network."
+        }
+      },
+      {
+        "id": "node-ecr",
+        "type": "serviceNode",
+        "position": {
+          "x": 1310,
+          "y": 600
+        },
+        "data": {
+          "serviceId": "ecr_registry",
+          "label": "public.ecr.aws \u00b7 nginx:stable-alpine (image)",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "Container image for enrolment-api, pulled by the execution role through usms-nat -> usms-igw."
+        }
+      },
+      {
+        "id": "node-logs",
+        "type": "serviceNode",
+        "position": {
+          "x": 1310,
+          "y": 730
+        },
+        "data": {
+          "serviceId": "cloudwatch",
+          "label": "CloudWatch Logs \u00b7 /usms/ecs/enrolment (7-day retention)",
+          "category": "Management & Governance",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "awslogs driver target. Note: Floci did not store logConfiguration on the task definition."
+        }
+      },
+      {
+        "id": "node-s3",
+        "type": "serviceNode",
+        "position": {
+          "x": 1310,
+          "y": 850
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-student-data (bucket created in Lab 10)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "Named by USMSStudentDataReadWrite on both usms-ec2-app-role and usms-ecs-task-role. Does not exist yet in Lab 04."
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e-students-igw",
+        "source": "node-students",
+        "target": "node-igw",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "student opens the portal"
+        }
+      },
+      {
+        "id": "e-igw-web",
+        "source": "node-igw",
+        "target": "node-web",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "usms-public-rt 0.0.0.0/0 -> igw"
+        }
+      },
+      {
+        "id": "e-web-task-a",
+        "source": "node-web",
+        "target": "node-task-a",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "enrolment API tcp/80 (usms-enrolment-sg <- usms-app-sg)"
+        }
+      },
+      {
+        "id": "e-web-task-b",
+        "source": "node-web",
+        "target": "node-task-b",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "enrolment API tcp/80 (usms-enrolment-sg <- usms-app-sg)"
+        }
+      },
+      {
+        "id": "e-web-db",
+        "source": "node-web",
+        "target": "node-db",
+        "type": "custom",
+        "data": {
+          "protocol": "SQL",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 5000,
+          "relationship": "dependency",
+          "label": "PostgreSQL 5432 (Lab 03)",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-task-a-nat",
+        "source": "node-task-a",
+        "target": "node-nat",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "image pull: usms-private-rt 0.0.0.0/0 -> usms-nat",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-task-b-nat",
+        "source": "node-task-b",
+        "target": "node-nat",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "image pull (cross-AZ to the single NAT)",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-nat-igw",
+        "source": "node-nat",
+        "target": "node-igw",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 6,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "NAT -> usms-igw",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-igw-ecr",
+        "source": "node-igw",
+        "target": "node-ecr",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 7,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "pull public.ecr.aws/nginx/nginx:stable-alpine",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-task-a-logs",
+        "source": "node-task-a",
+        "target": "node-logs",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "awslogs (stream prefix enrolment)",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-task-b-logs",
+        "source": "node-task-b",
+        "target": "node-logs",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "awslogs (stream prefix enrolment)",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-task-a-s3ep",
+        "source": "node-task-a",
+        "target": "node-s3ep",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 9,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "task role -> S3 (image layers / future bucket)",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      },
+      {
+        "id": "e-s3ep-s3",
+        "source": "node-s3ep",
+        "target": "node-s3",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 10,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "label": "gateway endpoint -> S3",
+          "traversal": "dependency",
+          "dependencyRequired": false
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab04-enrol",
+      "name": "Student registers for a module",
+      "method": "POST",
+      "path": "/enrol",
+      "startNodeId": "node-students",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}

@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 # Verify every Lab 04 artefact exists and is configured correctly.
 # Exit 1 if anything is missing. Read-only; safe to run at any time.
+#
+# Updated in Lab 05 Exercise 2.
+# Property being checked in the networking block: the enrolment tasks accept
+# traffic only from a named security group, never from an IP range. Before Lab 05
+# that group was usms-app-sg; after the Lab 05 cutover it is usms-alb-sg.
+#
+# Expected count after this change: PASS=39 FAIL=0 on real AWS (one check became two).
+# On my Floci build: PASS=38 FAIL=1, because Floci does not store group-referenced
+# rules, so the "sourced from usms-alb-sg" check cannot pass on this emulator.
+# Writing the count down matters: if a check silently disappears, an undocumented
+# count would still look like a clean run.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -10,6 +21,8 @@ source "$REPO_ROOT/configs/lab-01.env" 2>/dev/null || true
 source "$REPO_ROOT/configs/lab-02.env" 2>/dev/null || true
 source "$REPO_ROOT/configs/lab-03.env" 2>/dev/null || true
 source "$REPO_ROOT/configs/lab-04.env" 2>/dev/null || true
+# Lab 05 may not have been done yet - the script must still run without it.
+source "$REPO_ROOT/configs/lab-05.env" 2>/dev/null || true
 
 : "${USMS_APP_SG:=none}"
 : "${USMS_PRIVATE_SUBNET_A:=none}"
@@ -22,6 +35,7 @@ source "$REPO_ROOT/configs/lab-04.env" 2>/dev/null || true
 : "${USMS_ECS_EXEC_ROLE:=usms-ecs-exec-role}"
 : "${USMS_ECS_TASK_ROLE:=usms-ecs-task-role}"
 : "${USMS_LOG_GROUP_ENROLMENT:=/usms/ecs/enrolment}"
+: "${USMS_ALB_SG:=none}"
 
 PASS=0; FAIL=0
 check() {
@@ -32,6 +46,10 @@ check() {
 # svc <jmespath>  -> one field from the ECS service
 svc() { aws ecs describe-services --cluster "$USMS_ECS_CLUSTER" \
           --services "$USMS_ENROLMENT_SERVICE" --query "services[0].$1" --output text; }
+
+# every source group on usms-enrolment-sg (not just the first one)
+enrolsrc() { aws ec2 describe-security-groups --group-ids "$USMS_ENROLMENT_SG" \
+               --query 'SecurityGroups[0].IpPermissions[].UserIdGroupPairs[].GroupId' --output text; }
 
 echo "== Environment =="
 check "Floci container running" \
@@ -93,8 +111,15 @@ check "service desiredCount is 2 (one task per Availability Zone)" \
 
 echo "== Lab 04 networking =="
 check "usms-enrolment-sg exists"  "aws ec2 describe-security-groups --group-ids $USMS_ENROLMENT_SG"
-check "usms-enrolment-sg is sourced from usms-app-sg (not a CIDR)" \
-  "test \"\$(aws ec2 describe-security-groups --group-ids $USMS_ENROLMENT_SG --query 'SecurityGroups[0].IpPermissions[0].UserIdGroupPairs[0].GroupId' --output text)\" = $USMS_APP_SG"
+# Changed in Lab 05 Ex 2: was "sourced from usms-app-sg". Same property (a group,
+# not a CIDR), new expected group after the cutover. Searches ALL source groups,
+# not just [0], because AWS merges several sources into one IpPermission entry.
+check "usms-enrolment-sg is sourced from a group (usms-alb-sg after Lab 05), not a CIDR" \
+  "test \"$USMS_ALB_SG\" != none && enrolsrc | grep -qw $USMS_ALB_SG"
+# Added in Lab 05 Ex 2: without this, a group that admits BOTH the old and the new
+# source would still pass the check above.
+check "usms-app-sg is no longer a direct source of usms-enrolment-sg" \
+  "! enrolsrc | grep -qw $USMS_APP_SG"
 check "usms-enrolment-sg admits NOTHING from 0.0.0.0/0" \
   "! aws ec2 describe-security-groups --group-ids $USMS_ENROLMENT_SG --query 'SecurityGroups[0].IpPermissions[].IpRanges[].CidrIp' --output text | grep -q '0.0.0.0/0'"
 
