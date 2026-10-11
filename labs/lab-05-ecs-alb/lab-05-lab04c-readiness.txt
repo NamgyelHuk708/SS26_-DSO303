@@ -1,0 +1,21 @@
+# USMS Lab 05 -> Lab 06 readiness - generated 2026-10-11T10:56:39Z
+
+ResourceLabel        : app/usms-enrolment-alb/a152a9ed117a4a9b/targetgroup/usms-enrolment-tg/1210fc467d47436e
+Target group ARN     : arn:aws:elasticloadbalancing:us-east-1:000000000000:targetgroup/usms-enrolment-tg/1210fc467d47436e
+Load balancer ARN    : arn:aws:elasticloadbalancing:us-east-1:000000000000:loadbalancer/app/usms-enrolment-alb/a152a9ed117a4a9b
+Scalable resource ID : service/usms-ecs-cluster/usms-enrolment-svc
+Scalable dimension   : ecs:service:DesiredCount
+Current desired count: 2
+
+Capacity replacement : started 2026-10-11T10:54:26Z, stopped waiting at 2026-10-11T10:56:12Z (106.7s)
+                       NOT MEANINGFUL on this Floci build: --force-new-deployment was accepted
+                       but no task was replaced (same task ARNs throughout). AWS documents
+                       Fargate task start-up as roughly 20-60 seconds per task, so replacing
+                       2 tasks one at a time behind the ALB (start, 2 health checks at 30s,
+                       30s draining) would take a few minutes. Lab 06 cooldowns should be
+                       sized against that, not against Floci.
+
+Recommended metric   : ALBRequestCountPerTarget - the enrolment API is a web API, so requests
+                       per task is what actually overloads it and it rises before CPU does.
+                       CPU-based metrics also have no data on this build, because Container
+                       Insights was not recorded on the cluster (Lab 04 Step 4).
