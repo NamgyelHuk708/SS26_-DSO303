@@ -46,45 +46,8 @@ The USMS student portal (`usms-web-01`) needs to call the enrolment API. After L
 
 The ALB has one node in each public subnet. The listener on port 80 has a rule at priority 10 for `/alb-health` and a default action that forwards to `usms-enrolment-tg`. The ECS service registers its two tasks (in the private subnets) into that target group. After the cutover, `usms-enrolment-sg` only allows port 80 from `usms-alb-sg`.
 
-```mermaid
-flowchart TB
-    Internet((Internet)) --> IGW[usms-igw]
-    subgraph VPC["usms-vpc 10.0.0.0/16"]
-        subgraph PubA["usms-public-subnet-a (us-east-1a)"]
-            N1["ALB node"]
-            WEB["usms-web-01<br/>usms-app-sg"]
-        end
-        subgraph PubB["usms-public-subnet-b (us-east-1b)"]
-            N2["ALB node"]
-        end
-        subgraph PrivA["usms-private-subnet-a"]
-            T1["Fargate task"]
-        end
-        subgraph PrivB["usms-private-subnet-b"]
-            T2["Fargate task"]
-        end
-    end
-    IGW --> N1
-    IGW --> N2
-    subgraph ALB["usms-enrolment-alb (usms-alb-sg: 80, 443 from 0.0.0.0/0)"]
-        L["Listener HTTP:80"]
-        R["Rule prio 10: /alb-health -> fixed 200"]
-        D["Default: forward"]
-    end
-    N1 --- L
-    N2 --- L
-    L --> R
-    L --> D
-    D --> TG["usms-enrolment-tg<br/>target-type ip, GET / every 30s"]
-    TG -- "tcp/80 (usms-enrolment-sg: from usms-alb-sg only)" --> T1
-    TG --> T2
-    SVC["usms-enrolment-svc<br/>registers its own targets"] -.-> TG
-    WEB -. "calls the ALB DNS name" .-> L
-```
+![alt text](LAB_05(image)/aws-architecture-diagram(3).png)
 
-*Lab 05 architecture: an internet-facing ALB in the public subnets in front of the private Fargate tasks*
-
-*Image Source: N/A*
 
 ## 5. Implementation Procedure
 
@@ -102,7 +65,6 @@ Load the environment and check both public subnets
 
 *All 12 values loaded; the two public subnets are in us-east-1a and us-east-1b*
 
-*Image Source: N/A*
 
 ---
 
@@ -114,7 +76,7 @@ Labs 2, 3 and 4 still intact
 
 *Lab 2 PASS=32 FAIL=1, Lab 3 PASS=33 FAIL=3, Lab 4 PASS=37 FAIL=1 – the same documented Floci limitations as before, nothing new*
 
-*Image Source: N/A*
+
 
 ---
 
@@ -126,7 +88,7 @@ Probe what this Floci build supports for ELBv2
 
 *ELBv2 answers. describe-listeners with a fake ARN returned an empty list instead of a ValidationError*
 
-*Image Source: N/A*
+
 
 ---
 
@@ -138,7 +100,7 @@ The load balancer's security group
 
 *usms-alb-sg: one inbound rule, tcp/80 from 0.0.0.0/0, no source group, one default outbound rule*
 
-*Image Source: N/A*
+
 
 ---
 
@@ -150,7 +112,7 @@ Your turn: port 443
 
 *A second rule for tcp/443 from 0.0.0.0/0. The port is open but nothing listens on it yet*
 
-*Image Source: N/A*
+
 
 ---
 
@@ -162,7 +124,6 @@ Create the Application Load Balancer
 
 *ALB created with DNS name usms-enrolment-alb-a152a9ed117a4a9b.elb.floci and active straight away*
 
-*Image Source: N/A*
 
 ---
 
@@ -174,7 +135,6 @@ Read the load balancer back and set its attributes
 
 *internet-facing, application, one node in us-east-1a and one in us-east-1b, carrying usms-alb-sg; idle timeout 60 and drop invalid headers true*
 
-*Image Source: N/A*
 
 ---
 
@@ -186,8 +146,6 @@ Create the target group
 
 *Type ip, HTTP:80 in usms-vpc, health check GET / every 30s, timeout 5, thresholds 2/2, matcher 200, no load balancers attached yet*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 9**
@@ -197,8 +155,6 @@ Your turn: widen the matcher and put it back
 ![Step 6 your turn](LAB_05(image)/step6-myturn.png)
 
 *Matcher changed to 200-399 and back to 200 without recreating anything*
-
-*Image Source: N/A*
 
 ---
 
@@ -210,8 +166,6 @@ Target group attributes
 
 *Deregistration delay 30 seconds and least_outstanding_requests*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 11**
@@ -221,8 +175,6 @@ Create the listener
 ![Step 8](LAB_05(image)/step8.png)
 
 *HTTP:80 listener forwarding to usms-enrolment-tg; the target group now shows 1 attached load balancer*
-
-*Image Source: N/A*
 
 ---
 
@@ -234,8 +186,6 @@ Let the load balancer reach the tasks
 
 *Rule sgr-adbe516cce544b2b8 was created, but both port-80 rules on usms-enrolment-sg read back with empty Sources (Floci limitation)*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 13**
@@ -245,8 +195,6 @@ Attach the service to the target group
 ![Step 10](LAB_05(image)/step10.png)
 
 *update-service returned LB null, so the service was recreated with the load balancer attached; grace period still reads null*
-
-*Image Source: N/A*
 
 ---
 
@@ -258,8 +206,6 @@ Targets registered by the service
 
 *Two targets, 172.27.0.3 and 172.27.0.4, both healthy, registered without me running register-targets*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 15**
@@ -269,8 +215,6 @@ ECS health and target health side by side
 ![Step 11.2](LAB_05(image)/step11.2.png)
 
 *ECS healthStatus is None for every task, while the target group says healthy. list-tasks also returns STOPPED tasks*
-
-*Image Source: N/A*
 
 ---
 
@@ -282,8 +226,6 @@ Your turn: desired count 3 and back to 2
 
 *A third target (172.27.0.5) appeared as initial, then one target was removed when the count went back to 2*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 17**
@@ -293,8 +235,6 @@ Trying the data path
 ![Step 12.1](LAB_05(image)/step12.1.png)
 
 *The .elb.floci name does not resolve and curl got http_code=000 – no request reached the ALB*
-
-*Image Source: N/A*
 
 ---
 
@@ -306,8 +246,6 @@ Control-plane proof of the path
 
 *Listener -> target group -> two targets -> service all link up. Block 5 (the firewall) is empty because of the group-reference limitation*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 19**
@@ -317,8 +255,6 @@ The two port-80 rules on usms-enrolment-sg
 ![Step 13.1](LAB_05(image)/step13.1.png)
 
 *Two ingress rules on port 80, both with FromGroup None, told apart only by their rule IDs*
-
-*Image Source: N/A*
 
 ---
 
@@ -330,8 +266,6 @@ Lab 04's script after the cutover attempt
 
 *verify-lab-04.sh still PASS=37 FAIL=1 with no difference, because that check had been failing since Lab 4*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 21**
@@ -341,8 +275,6 @@ Revoking Lab 04's direct rule
 ![Step 13.3](LAB_05(image)/step13.3.png)
 
 *revoke-security-group-ingress returned True, but the readback still lists sgr-b7b698f916341dcdd*
-
-*Image Source: N/A*
 
 ---
 
@@ -354,8 +286,6 @@ Forced deployment
 
 *8 polls with the same two healthy targets – no initial or draining state appeared*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 23**
@@ -365,8 +295,6 @@ Before and after the forced deployment
 ![Step 14.2](LAB_05(image)/step14.2.png)
 
 *Same task definition, same counts, and also the same task ARNs and IPs – Floci did not replace any task*
-
-*Image Source: N/A*
 
 ---
 
@@ -378,8 +306,6 @@ Listener rule at priority 10
 
 *Rule 10 (/alb-health -> fixed-response 200) listed above the default action; curl still 000*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 25**
@@ -389,8 +315,6 @@ Persistence after a restart
 ![Step 16](LAB_05(image)/step16.png)
 
 *Every ARN re-derived from the API after a Floci stop/start, and PERSISTENCE PROVEN*
-
-*Image Source: N/A*
 
 ---
 
@@ -402,8 +326,6 @@ Pre- and post-restart records
 
 *Six facts in each file; the seventh (source groups on usms-enrolment-sg) could not be recorded because Floci returns null*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 27**
@@ -413,8 +335,6 @@ Closing the loop
 ![Step 17](LAB_05(image)/step17.png)
 
 *CUTOVER CONFIRMED (from the ingress file) and LOOP CLOSED back to usms-web-01; Lab=05 tags on the ALB SG, ALB and target group*
-
-*Image Source: N/A*
 
 ---
 
@@ -426,8 +346,6 @@ Write configs/lab-05.env
 
 *15 exports; the listener line was fixed by hand and the grace period is None*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 29**
@@ -437,8 +355,6 @@ Run the verify script
 ![Verify](LAB_05(image)/step19-verify.png)
 
 *verify-lab-05.sh PASS=45 FAIL=4 – all four failures are known Floci limitations*
-
-*Image Source: N/A*
 
 ---
 
@@ -450,8 +366,6 @@ Cleanup script syntax check
 
 *lab-05-cleanup.sh passes bash -n and was not run*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 31**
@@ -461,8 +375,6 @@ Commit
 ![Commit](LAB_05(image)/step19-commit.png)
 
 *Lab 05 committed after checking nothing under outputs/ was staged*
-
-*Image Source: N/A*
 
 ---
 

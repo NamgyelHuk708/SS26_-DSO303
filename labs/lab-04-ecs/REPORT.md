@@ -47,38 +47,7 @@ Running the enrolment service on ECS fixes the first part of this problem:
 
 The enrolment service runs as two Fargate tasks, one in each private subnet. The only allowed caller is the web tier (`usms-app-sg`). The tasks have no public IP, so they reach the container registry through the NAT gateway from Lab 2.
 
-```mermaid
-flowchart TB
-    Internet((Internet)) --> IGW[usms-igw]
-    subgraph VPC["usms-vpc 10.0.0.0/16"]
-        subgraph PubA["usms-public-subnet-a (us-east-1a)"]
-            WEB["usms-web-01<br/>usms-app-sg"]
-            NAT["usms-nat"]
-        end
-        subgraph PrivA["usms-private-subnet-a (us-east-1a)"]
-            T1["Fargate task 1"]
-        end
-        subgraph PrivB["usms-private-subnet-b (us-east-1b)"]
-            T2["Fargate task 2"]
-        end
-    end
-    IGW --> WEB
-    WEB -- "tcp/80 (usms-enrolment-sg, source = usms-app-sg)" --> T1
-    WEB -- "tcp/80" --> T2
-    T1 -- "image pull via usms-private-rt" --> NAT
-    T2 --> NAT
-    NAT --> IGW
-    subgraph ECS["ECS control plane"]
-        C["usms-ecs-cluster"] --> S["usms-enrolment-svc<br/>desiredCount = 2"]
-        S --> TD["usms-enrolment:2<br/>FARGATE, awsvpc, 256 CPU"]
-        TD --> ER["usms-ecs-exec-role<br/>pull image, write logs"]
-        TD --> TR["usms-ecs-task-role<br/>USMSStudentDataReadWrite"]
-    end
-    S -.-> T1
-    S -.-> T2
-```
-
-*Lab 04 architecture: ECS service in the private subnets, called only by the web tier*
+![alt text](LAB_04(image)/aws-architecture-diagram.png)
 
 ## 5. Implementation Procedure
 

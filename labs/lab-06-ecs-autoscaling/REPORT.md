@@ -47,39 +47,7 @@ USMS enrolment traffic is very uneven. Most of the year it is quiet, but when en
 
 The diagram shows the full design. The part this lab adds is the Application Auto Scaling box, which only writes one integer. On my Floci build only the CloudWatch part (green) exists; the Application Auto Scaling part (grey) is the design that would run on real AWS.
 
-```mermaid
-flowchart TB
-    subgraph CW["CloudWatch (works on Floci)"]
-        M["Custom metric<br/>USMS/Enrolment EnrolmentQueueDepth"]
-        A["Alarm usms-enrolment-queue-high<br/>Average >= 100, 1 x 60s"]
-        M --> A
-    end
-    subgraph ASA["Application Auto Scaling (NOT available on Floci - design only)"]
-        T["Scalable target<br/>service/usms-ecs-cluster/usms-enrolment-svc<br/>ecs:service:DesiredCount  min 2  max 10"]
-        P1["Target tracking: CPU 50%"]
-        P2["Target tracking: ALBRequestCountPerTarget 1000"]
-        P3["Step scaling: +1 / +3"]
-        S["Scheduled: 07:45 min 4 / 20:00 min 2<br/>Asia/Thimphu"]
-        P1 --> T
-        P2 --> T
-        P3 --> T
-        S --> T
-    end
-    A -. "AlarmActions -> step policy ARN" .-> P3
-    T -- "writes ONE integer" --> SVC
-    subgraph Built["Built in Labs 04-05 (unchanged)"]
-        SVC["usms-enrolment-svc<br/>desiredCount"]
-        SVC --> TASKS["Fargate tasks in private subnets a + b"]
-        TASKS --> TG["usms-enrolment-tg<br/>(service registers its own targets)"]
-        ALB["usms-enrolment-alb"] --> TG
-    end
-    style CW fill:#d8f5d8
-    style ASA fill:#e8e8e8
-```
-
-*Lab 06 design: the control loop over desiredCount. Green works on my Floci build; grey is the design for real AWS.*
-
-*Image Source: N/A*
+![alt text](LAB_06(image)/aws-architecture-diagram(4).png)
 
 ## 5. Implementation Procedure
 
@@ -97,8 +65,6 @@ Load the six env files
 
 *All values from Labs 04 and 05 loaded; the grace period is None, a Floci limitation from Lab 05*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 2**
@@ -108,8 +74,6 @@ Labs 02–05 still intact, and the service at its baseline
 ![Step 2](LAB_06(image)/2.png)
 
 *Lab 02 32/1, Lab 03 33/3, Lab 04 38/1, Lab 05 45/4 – the same known Floci failures as before; the service is at desired 2, running 2, with 1 load balancer*
-
-*Image Source: N/A*
 
 ---
 
@@ -121,8 +85,6 @@ Support probe
 
 *Every Application Auto Scaling call is "not available"; CloudWatch, IAM, ECS and ELBv2 are supported*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 4**
@@ -132,8 +94,6 @@ Confirming Path C
 ![Step 3 check](LAB_06(image)/3check.png)
 
 *describe-scalable-targets returns UnknownOperationException: Unknown operation: AnyScaleFrontendService.DescribeScalableTargets*
-
-*Image Source: N/A*
 
 ---
 
@@ -145,8 +105,6 @@ Service-linked role (Step 4)
 
 *create-service-linked-role returns UnsupportedOperation and the role does not exist (NoSuchEntity)*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 6**
@@ -156,8 +114,6 @@ Resource ID built from the service ARN (Step 5)
 ![Resource ID](LAB_06(image)/c3.png)
 
 *service/usms-ecs-cluster/usms-enrolment-svc – 3 segments, first segment "service"; register-scalable-target fails with UnknownOperationException*
-
-*Image Source: N/A*
 
 ---
 
@@ -169,8 +125,6 @@ Scaling policy templates (Steps 7, 9, 10, 13)
 
 *Four valid JSON templates with no unexpanded variables; the ResourceLabel has 6 segments; put-scaling-policy fails with UnknownOperationException*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 8**
@@ -180,8 +134,6 @@ Custom metric and alarm (Step 10)
 ![Metric and alarm](LAB_06(image)/c5.png)
 
 *EnrolmentQueueDepth published in USMS/Enrolment; alarm usms-enrolment-queue-high with Average >= 100 over 1 x 60 s, notBreaching, no actions, state INSUFFICIENT_DATA*
-
-*Image Source: N/A*
 
 ---
 
@@ -193,8 +145,6 @@ Pushing the metric and firing the alarm (Step 12)
 
 *The metric was pushed to 260 but the alarm stayed INSUFFICIENT_DATA for 6 polls; forced to ALARM with set-alarm-state; desiredCount stayed at 2*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 10**
@@ -204,8 +154,6 @@ What real AWS would have done
 ![Step calculation](LAB_06(image)/c6_stepcalc.png)
 
 *A breach of 160 selects the +3 step, so desiredCount would have gone from 2 to 5*
-
-*Image Source: N/A*
 
 ---
 
@@ -217,8 +165,6 @@ Persistence after a restart (Step 14)
 
 *The alarm and metric survived; the first diff failed only because of a hidden VS Code terminal marker; both EC2 instances came back stopped and were started again*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 12**
@@ -228,8 +174,6 @@ What this lab changed about the service (Step 15)
 ![Chain](LAB_06(image)/c9.png)
 
 *Task definition still usms-enrolment:2 and still one load balancer – this lab changed nothing about the service*
-
-*Image Source: N/A*
 
 ---
 
@@ -241,8 +185,6 @@ configs/lab-06.env (Step 16)
 
 *22 exports, no empty values; the policy ARNs are recorded as not-created*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 14**
@@ -252,8 +194,6 @@ Verify script
 ![Verify](LAB_06(image)/c11-verify.png)
 
 *PASS=23 FAIL=19 – every failure is an Application Auto Scaling check or a known Floci limitation*
-
-*Image Source: N/A*
 
 ---
 
@@ -265,8 +205,6 @@ Cleanup script
 
 *lab-06-cleanup.sh passes bash -n and was not run*
 
-*Image Source: N/A*
-
 ---
 
 **Screenshot 16**
@@ -276,8 +214,6 @@ Cleanup hint strings (Step 17 part 1)
 ![Hints](LAB_06(image)/c11-hints.png)
 
 *The Lab 04 and 05 cleanup scripts already name lab-06-cleanup.sh, so no repair was needed*
-
-*Image Source: N/A*
 
 ---
 
