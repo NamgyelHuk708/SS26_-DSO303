@@ -16,3 +16,15 @@ PATH A  - use aws eks throughout
 | What would I have to change to move to another cloud? | Almost everything - ECS, task roles, ALB are AWS-only | The manifests move; IAM roles, VPC, node groups and LB annotations do not |
 
 **For USMS I would choose ECS (Fargate).** It is a small team with one service that is quiet most of the year, and ECS + Fargate gave me scaling, a load balancer and no servers to patch with far fewer moving parts. Kubernetes would only win if USMS grew into many services or needed to run outside AWS.
+
+## Exercise 5 Part 3 - what Lab 08 needs from configs/lab-07.env
+- USMS_EKS_CLUSTER - every aws eks call and the kubeconfig context.
+- USMS_EKS_NODEGROUP - Lab 08 changes the node group's scaling config from the AWS side.
+- USMS_EKS_NAMESPACE - every kubectl command in Lab 08 runs in namespace usms.
+- USMS_EKS_LB_PORTS (8081,8082) - Lab 08 can't publish a LoadBalancer/Ingress on Floci without it.
+- USMS_EKS_ENDPOINT - check kubectl points at the right cluster (port 6500), especially after a rebuild.
+- USMS_K8S_DEPLOY_ENROLMENT - the Deployment the HorizontalPodAutoscaler will target.
+- USMS_K8S_DEPLOY_GATEWAY / USMS_K8S_SVC_GATEWAY - the Service that becomes NodePort, LoadBalancer and Ingress.
+- USMS_K8S_CPU_REQUEST (50m) - to check the HPA's percentage maths by hand.
+- USMS_K8S_MANIFEST_DIR - to rebuild everything quickly if Floci is restarted (Step 22 showed why).
+The IAM role and policy ARNs are for the record and for cleanup; Lab 08 doesn't need them.
