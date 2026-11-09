@@ -83,3 +83,23 @@ I would still choose ECS on Fargate: one small team, quiet for eight months, and
 Pending for lack of nodes. The strongest argument against my choice is what this lab showed - Kubernetes gave
 me in-cluster scaling I could watch and debug second by second (63% -> 3 pods, then the 300 s hold), and one
 Ingress could expose every service behind one load balancer, which ECS would need more hand-built ALB rules for.
+
+## ECS or Kubernetes for USMS (Exercise 5, Part 3)
+
+**Recommendation: ECS on Fargate.** USMS is one small team in one region, quiet for eight months and very
+busy for two. Three things I observed decide it for me:
+
+1. **Capacity.** On ECS (Lab 06) desiredCount is the only number; Fargate always finds room for a new task.
+   On Kubernetes there are two control loops: the HPA raised replicas (2 -> 3 at 63% CPU in Lab 08), but nodes
+   are a separate integer, and update-nodegroup-config failed (UnknownOperationException). Without a Cluster
+   Autoscaler or Karpenter, a real surge would leave pods Pending.
+2. **Operational load.** Lab 07 and Lab 08 needed two IAM roles, a node group, Ingress controllers, PDBs and
+   careful manifests; my cluster was wiped twice by an emulator restart and rebuilt from manifests/lab-07/.
+   Lab 04's ECS service survived every restart as an AWS object.
+3. **Exposure.** Lab 05 needed six hand-made ALB objects, which is real work, but they were done once.
+
+**The strongest argument against my choice:** Kubernetes gave me things ECS could not. I could watch and
+debug the autoscaler second by second (kubectl describe hpa, the 300 s hold, "All metrics below target"),
+one Ingress could put every service behind one ALB by path, and the manifests are portable to any cluster.
+A PDB stopped a drain from taking the last pod - ECS has no equivalent I could test. If USMS grew to many
+services, or needed to leave AWS, those advantages would outweigh the extra moving parts.

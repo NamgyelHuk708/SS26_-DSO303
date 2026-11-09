@@ -1,0 +1,33 @@
+# Exercise 4 - expose ONLY /results to the university network, on the existing ALB.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: usms-results-ingress
+  namespace: usms
+  labels:
+    app: usms-results
+    project: usms
+    lab: "08"
+  annotations:
+    # Real EKS + AWS Load Balancer Controller. Inert on this build (no controller).
+    alb.ingress.kubernetes.io/group.name: usms-portal          # share ONE ALB - no second load balancer
+    alb.ingress.kubernetes.io/group.order: "10"
+    alb.ingress.kubernetes.io/scheme: internet-facing          # same ALB as the portal Ingress
+    alb.ingress.kubernetes.io/target-type: ip                  # pod IPs, like Lab 05's target group
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'   # a normal HTTP port
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    # Only the university network may use this rule (example campus range):
+    alb.ingress.kubernetes.io/conditions.usms-results: >
+      [{"field":"source-ip","sourceIpConfig":{"values":["10.10.0.0/16"]}}]
+    alb.ingress.kubernetes.io/tags: Project=USMS,Tier=web,Lab=08
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /results
+            pathType: Prefix
+            backend:
+              service:
+                name: usms-results
+                port:
+                  number: 80
