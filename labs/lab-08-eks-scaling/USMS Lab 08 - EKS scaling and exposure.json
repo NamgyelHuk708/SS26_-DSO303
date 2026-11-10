@@ -1,0 +1,1521 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-11-09T12:00:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 08 - EKS scaling and exposure",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS Region \u00b7 us-east-1 (Floci 2.4.0, account 000000000000)",
+          "boundaryType": "region",
+          "width": 2300,
+          "height": 1320
+        },
+        "style": {
+          "width": 2300,
+          "height": 1320
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-cp",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 60
+        },
+        "data": {
+          "label": "usms-eks-cluster \u00b7 EKS control plane (AWS-run; k3s v1.30.10 on Floci)",
+          "boundaryType": "auth",
+          "width": 580,
+          "height": 520,
+          "eksComponent": "control-plane"
+        },
+        "style": {
+          "width": 580,
+          "height": 520
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "cp-api",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 120
+        },
+        "data": {
+          "label": "API server",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 40,
+          "eksComponent": "api-server"
+        },
+        "style": {
+          "width": 310,
+          "height": 40
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "cp-etcd",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 175
+        },
+        "data": {
+          "label": "etcd \u00b7 Deployments, Services, HPAs, PDBs, Ingresses",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 50,
+          "eksComponent": "etcd"
+        },
+        "style": {
+          "width": 310,
+          "height": 50
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "cp-sched",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 240
+        },
+        "data": {
+          "label": "Scheduler \u00b7 nodeSelector workload=usms, requests",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 50,
+          "eksComponent": "scheduler"
+        },
+        "style": {
+          "width": 310,
+          "height": 50
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "cp-ctrl",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 305
+        },
+        "data": {
+          "label": "Controllers \u00b7 ReplicaSets, Endpoints, eviction + PDB",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 50,
+          "eksComponent": "controllers"
+        },
+        "style": {
+          "width": 310,
+          "height": 50
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "cp-hpa",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 370
+        },
+        "data": {
+          "label": "HPA controller \u00b7 every 15 s: ceil(pods x cpu% / target), writes spec.replicas",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 60,
+          "eksComponent": "controllers"
+        },
+        "style": {
+          "width": 310,
+          "height": 60
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "cp-metrics",
+        "type": "boundaryNode",
+        "position": {
+          "x": 280,
+          "y": 445
+        },
+        "data": {
+          "label": "metrics-server \u00b7 metrics.k8s.io (kubectl top, HPA input)",
+          "boundaryType": "auth",
+          "width": 310,
+          "height": 50,
+          "eksComponent": "controllers"
+        },
+        "style": {
+          "width": 310,
+          "height": 50
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-vpc",
+        "type": "boundaryNode",
+        "position": {
+          "x": 640,
+          "y": 60
+        },
+        "data": {
+          "label": "usms-vpc \u00b7 10.0.0.0/16",
+          "boundaryType": "vpc",
+          "width": 1320,
+          "height": 1220,
+          "cidr": "10.0.0.0/16"
+        },
+        "style": {
+          "width": 1320,
+          "height": 1220
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -2
+      },
+      {
+        "id": "box-az-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 660,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1a",
+          "boundaryType": "az",
+          "width": 630,
+          "height": 1160
+        },
+        "style": {
+          "width": 630,
+          "height": 1160
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-az-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1310,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1b",
+          "boundaryType": "az",
+          "width": 630,
+          "height": 1160
+        },
+        "style": {
+          "width": 630,
+          "height": 1160
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-pub-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 680,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-a \u00b7 Lab: 10.0.1.0/24",
+          "boundaryType": "public_subnet",
+          "width": 590,
+          "height": 280,
+          "cidr": "10.0.1.0/24"
+        },
+        "style": {
+          "width": 590,
+          "height": 280
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-pub-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1330,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-b \u00b7 Lab: 10.0.2.0/24",
+          "boundaryType": "public_subnet",
+          "width": 590,
+          "height": 280,
+          "cidr": "10.0.2.0/24"
+        },
+        "style": {
+          "width": 590,
+          "height": 280
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 680,
+          "y": 460
+        },
+        "data": {
+          "label": "usms-private-subnet-a \u00b7 Lab: 10.0.3.0/24 (node group)",
+          "boundaryType": "private_subnet",
+          "width": 590,
+          "height": 780,
+          "cidr": "10.0.3.0/24"
+        },
+        "style": {
+          "width": 590,
+          "height": 780
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1330,
+          "y": 460
+        },
+        "data": {
+          "label": "usms-private-subnet-b \u00b7 Lab: 10.0.4.0/24 (node group)",
+          "boundaryType": "private_subnet",
+          "width": 590,
+          "height": 780,
+          "cidr": "10.0.4.0/24"
+        },
+        "style": {
+          "width": 590,
+          "height": 780
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "sg-lb",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1990,
+          "y": 560
+        },
+        "data": {
+          "label": "Load balancers (NLB + ALB on real EKS) \u00b7 in: 80 from 0.0.0.0/0",
+          "boundaryType": "security_group",
+          "width": 290,
+          "height": 80,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "Internet-facing HTTP (ALB)"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "Internet-facing TCP 80 (NLB)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "allow all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 290,
+          "height": 80
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-pods",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1990,
+          "y": 660
+        },
+        "data": {
+          "label": "Pod network (no NetworkPolicy) \u00b7 in: 80 from 10.0.0.0/16",
+          "boundaryType": "security_group",
+          "width": 290,
+          "height": 80,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.0/16"
+                },
+                "description": "Load balancer targets (ip) and pod-to-pod HTTP"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.0/16"
+                },
+                "description": "NLB targets (TCP 80)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "allow all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 290,
+          "height": 80
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-cluster",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1990,
+          "y": 760
+        },
+        "data": {
+          "label": "usms-eks-cluster-sg \u00b7 in: 443 from 10.0.0.0/16",
+          "boundaryType": "security_group",
+          "width": 290,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.0/16"
+                },
+                "description": "Kubernetes API from the VPC"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "allow all egress"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 290,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "node-api",
+        "type": "serviceNode",
+        "position": {
+          "x": 70,
+          "y": 170
+        },
+        "data": {
+          "serviceId": "eks",
+          "label": "usms-eks-cluster API endpoint (:6500)",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "referenceOnly": true,
+            "eks": {
+              "kind": "control-plane",
+              "clusterName": "usms-eks-cluster",
+              "controlPlaneAvailable": true
+            },
+            "endpoint": "https://localhost:6500",
+            "kubeconfig": "context usms-eks-k3s (k3s admin kubeconfig, git-ignored) - the IAM token was rejected after the Floci 2.4.0 upgrade",
+            "version": "v1.30.10+k3s1",
+            "tags": "_lb_ports_=8081,8082 (not published on 2.4.0)"
+          },
+          "notes": "Floci 2.4.0 recreated this k3s cluster empty; the app was re-applied from manifests/lab-07/."
+        }
+      },
+      {
+        "id": "node-dev",
+        "type": "serviceNode",
+        "position": {
+          "x": 70,
+          "y": 620
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Me \u00b7 kubectl (port-forward :18080 / :30081)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "notes": "Rung 1: kubectl port-forward is a tunnel to ONE pod through the API server - debugging only."
+        }
+      },
+      {
+        "id": "node-noderole",
+        "type": "serviceNode",
+        "position": {
+          "x": 70,
+          "y": 800
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-eks-node-role",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "notes": "USMSEKSNodePolicy + USMSStudentDataReadWrite (holder 3). On real EKS, IRSA would use a dedicated role annotated on usms-enrolment-sa instead."
+        }
+      },
+      {
+        "id": "node-s3",
+        "type": "serviceNode",
+        "position": {
+          "x": 330,
+          "y": 980
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-student-data (created in Lab 10)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "head-bucket 404 - Lab 10 creates it; Lab 08 Exercise 5 files will be its first objects."
+        }
+      },
+      {
+        "id": "node-students",
+        "type": "serviceNode",
+        "position": {
+          "x": 2060,
+          "y": 140
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Students (internet)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "node-campus",
+        "type": "serviceNode",
+        "position": {
+          "x": 2060,
+          "y": 330
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Examinations Office (campus 10.10.0.0/16)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "notes": "Exercise 4: only this source range may use the /results rule."
+        }
+      },
+      {
+        "id": "node-igw",
+        "type": "serviceNode",
+        "position": {
+          "x": 1880,
+          "y": 230
+        },
+        "data": {
+          "serviceId": "internet_gateway",
+          "label": "usms-igw",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true
+        }
+      },
+      {
+        "id": "node-nlb",
+        "type": "serviceNode",
+        "position": {
+          "x": 1000,
+          "y": 250
+        },
+        "data": {
+          "serviceId": "nlb",
+          "label": "usms-gateway \u00b7 Service type LoadBalancer (NLB)",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": true,
+          "securityGroupIds": [
+            "sg-lb"
+          ],
+          "customConfig": {
+            "kubernetesService": "usms-gateway, type LoadBalancer, clusterIP 10.100.75.58, nodePort 30192",
+            "annotations": "aws-load-balancer-type external, nlb-target-type ip, scheme internet-facing",
+            "onFloci": "k3s ServiceLB (svclb pod) - EXTERNAL-IP 172.17.0.3; host ports 8081/8082 not published",
+            "onRealEks": "an internet-facing NLB in both public subnets with the gateway pod IPs as targets"
+          },
+          "notes": "Rung 3. type=LoadBalancer clusterIP=10.100.75.58 nodePort=30192 external=172.17.0.3 - each rung keeps the one below."
+        }
+      },
+      {
+        "id": "node-alb",
+        "type": "serviceNode",
+        "position": {
+          "x": 1500,
+          "y": 180
+        },
+        "data": {
+          "serviceId": "alb",
+          "label": "usms-portal Ingress group (ALB)",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": true,
+          "securityGroupIds": [
+            "sg-lb"
+          ],
+          "customConfig": {
+            "ingresses": "usms-portal-ingress (/enrolment, /results, /) + usms-results-ingress (Exercise 4: /results, source-ip 10.10.0.0/16)",
+            "annotations": "scheme internet-facing, target-type ip, listen-ports HTTP 80, healthcheck-path /healthz, group.name usms-portal",
+            "matching": "longest prefix wins (Lab 05's ALB used numeric priority)",
+            "onFloci": "NO ingress controller - both Ingresses are stored with CLASS <none> and no ADDRESS",
+            "onRealEks": "the AWS Load Balancer Controller creates ONE ALB, one ip target group per backend, one rule per path"
+          },
+          "notes": "Rung 4 - recorded, not implemented on this build. The same ALB I built by hand in Lab 05."
+        }
+      },
+      {
+        "id": "node-worker-a",
+        "type": "serviceNode",
+        "position": {
+          "x": 720,
+          "y": 500
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-eks-nodes \u00b7 worker 1 (t3.small)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "referenceOnly": true,
+            "labels": "workload=usms tier=app",
+            "scaling": "min 2 / max 4 / desired 2",
+            "resize": "update-nodegroup-config -> UnknownOperationException (Known Issue); alternative: HPA drill"
+          },
+          "notes": "Node group in private subnet a. On Floci ONE k3s node (i-acfd2de022a9365b8.ec2.internal) runs everything: ~2 CPU allocatable."
+        }
+      },
+      {
+        "id": "node-worker-b",
+        "type": "serviceNode",
+        "position": {
+          "x": 1370,
+          "y": 500
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-eks-nodes \u00b7 worker 2 (t3.small)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-B",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "referenceOnly": true,
+            "labels": "workload=usms tier=app",
+            "scaling": "min 2 / max 4 / desired 2",
+            "resize": "update-nodegroup-config -> UnknownOperationException (Known Issue); alternative: HPA drill"
+          },
+          "notes": "Node group in private subnet b. On Floci ONE k3s node (i-acfd2de022a9365b8.ec2.internal) runs everything: ~2 CPU allocatable."
+        }
+      },
+      {
+        "id": "node-gateway",
+        "type": "serviceNode",
+        "position": {
+          "x": 1000,
+          "y": 700
+        },
+        "data": {
+          "serviceId": "eks",
+          "label": "usms-gateway \u00b7 Deployment 2 + PDB minAvailable 1",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 2,
+          "multiAz": false,
+          "customConfig": {
+            "eks": {
+              "kind": "workload",
+              "clusterName": "usms-eks-cluster",
+              "namespace": "usms",
+              "workloadName": "usms-gateway",
+              "compute": "EC2",
+              "desiredReplicas": 2,
+              "runningPods": 2,
+              "readyPods": 2,
+              "serviceSelector": "usms-gateway",
+              "podLabel": "usms-gateway",
+              "serviceType": "LoadBalancer",
+              "servicePort": 80,
+              "containerPort": 80,
+              "image": "nginx:1.27-alpine",
+              "controlPlaneAvailable": true,
+              "nodeCount": 1,
+              "metricsAvailable": true,
+              "cpuRequestMilli": 50,
+              "observedCpuPercent": 2,
+              "hpaEnabled": false,
+              "targetCpuPercent": 50,
+              "minReplicas": 1,
+              "maxReplicas": 10,
+              "nodeAutoscaler": "NONE"
+            },
+            "pdb": "usms-gateway-pdb minAvailable 1 -> ALLOWED DISRUPTIONS 1 (was 0 with one replica; Exercise 2)",
+            "routes": "/enrolment/, /results/, /timetable/ by Service DNS name"
+          },
+          "notes": "Exercise 2: 2 replicas made it drainable without weakening the PDB.",
+          "securityGroupIds": [
+            "sg-pods"
+          ]
+        }
+      },
+      {
+        "id": "node-enrolment",
+        "type": "serviceNode",
+        "position": {
+          "x": 1000,
+          "y": 950
+        },
+        "data": {
+          "serviceId": "eks",
+          "label": "usms-enrolment \u00b7 HPA 2..8 @ 50% of 50m",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 2,
+          "multiAz": false,
+          "customConfig": {
+            "eks": {
+              "kind": "workload",
+              "clusterName": "usms-eks-cluster",
+              "namespace": "usms",
+              "workloadName": "usms-enrolment",
+              "compute": "EC2",
+              "desiredReplicas": 2,
+              "runningPods": 2,
+              "readyPods": 2,
+              "serviceSelector": "usms-enrolment",
+              "podLabel": "usms-enrolment",
+              "serviceType": "ClusterIP",
+              "servicePort": 80,
+              "containerPort": 80,
+              "image": "nginx:1.27-alpine",
+              "controlPlaneAvailable": true,
+              "nodeCount": 1,
+              "metricsAvailable": true,
+              "cpuRequestMilli": 50,
+              "observedCpuPercent": 2,
+              "hpaEnabled": true,
+              "targetCpuPercent": 50,
+              "minReplicas": 2,
+              "maxReplicas": 8,
+              "nodeAutoscaler": "NONE"
+            },
+            "hpa": "usms-enrolment-hpa autoscaling/v2: scaleUp 0 s, Percent 100 / Pods 2 per 15 s (Max); scaleDown window 300 s, 1 pod / 60 s (Min)",
+            "observed": "63% on 2 pods -> ceil(2 x 63/50) = 3; held 300 s after the load stopped; back to 2",
+            "nodeSelector": "workload=usms (enforcement proven with a bad value -> Pending)",
+            "pdb": "usms-enrolment-pdb maxUnavailable 1",
+            "qos": "Burstable: requests 50m/32Mi, limits 200m/128Mi"
+          },
+          "notes": "The HPA owns spec.replicas. Its percentage is of the 50m REQUEST, not of the node.",
+          "securityGroupIds": [
+            "sg-pods"
+          ]
+        }
+      },
+      {
+        "id": "node-results",
+        "type": "serviceNode",
+        "position": {
+          "x": 1600,
+          "y": 700
+        },
+        "data": {
+          "serviceId": "eks",
+          "label": "usms-results \u00b7 HPA 2..6 @ 60% + NodePort 30080",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "AZ-B",
+          "subnet": "private",
+          "replicas": 2,
+          "multiAz": false,
+          "customConfig": {
+            "eks": {
+              "kind": "workload",
+              "clusterName": "usms-eks-cluster",
+              "namespace": "usms",
+              "workloadName": "usms-results",
+              "compute": "EC2",
+              "desiredReplicas": 2,
+              "runningPods": 2,
+              "readyPods": 2,
+              "serviceSelector": "usms-results",
+              "podLabel": "usms-results",
+              "serviceType": "ClusterIP",
+              "servicePort": 80,
+              "containerPort": 80,
+              "image": "nginx:1.27-alpine",
+              "controlPlaneAvailable": true,
+              "nodeCount": 1,
+              "metricsAvailable": true,
+              "cpuRequestMilli": 50,
+              "observedCpuPercent": 2,
+              "hpaEnabled": true,
+              "targetCpuPercent": 60,
+              "minReplicas": 2,
+              "maxReplicas": 6,
+              "nodeAutoscaler": "NONE"
+            },
+            "hpa": "usms-results-hpa (Exercise 1): scaleUp Pods 2 per 30 s, scaleDown window 180 s",
+            "extraService": "usms-results-np NodePort 80:30080 (pinned) - answered on node IP 172.17.0.3, 3/3 across both pods"
+          },
+          "notes": "Rung 2: the NodePort is a second Service on the same pods.",
+          "securityGroupIds": [
+            "sg-pods"
+          ]
+        }
+      },
+      {
+        "id": "node-timetable",
+        "type": "serviceNode",
+        "position": {
+          "x": 1600,
+          "y": 950
+        },
+        "data": {
+          "serviceId": "eks",
+          "label": "usms-timetable \u00b7 Deployment 1 (Lab 07 Ex 1)",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "AZ-B",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "eks": {
+              "kind": "workload",
+              "clusterName": "usms-eks-cluster",
+              "namespace": "usms",
+              "workloadName": "usms-timetable",
+              "compute": "EC2",
+              "desiredReplicas": 1,
+              "runningPods": 1,
+              "readyPods": 1,
+              "serviceSelector": "usms-timetable",
+              "podLabel": "usms-timetable",
+              "serviceType": "ClusterIP",
+              "servicePort": 80,
+              "containerPort": 80,
+              "image": "nginx:1.27-alpine",
+              "controlPlaneAvailable": true,
+              "nodeCount": 1,
+              "metricsAvailable": true,
+              "cpuRequestMilli": 50,
+              "observedCpuPercent": 2,
+              "hpaEnabled": false,
+              "targetCpuPercent": 50,
+              "minReplicas": 1,
+              "maxReplicas": 10,
+              "nodeAutoscaler": "NONE"
+            }
+          },
+          "notes": "",
+          "securityGroupIds": [
+            "sg-pods"
+          ]
+        }
+      },
+      {
+        "id": "node-nat",
+        "type": "serviceNode",
+        "position": {
+          "x": 720,
+          "y": 250
+        },
+        "data": {
+          "serviceId": "nat_gateway",
+          "label": "usms-nat",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "legend",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 1350
+        },
+        "data": {
+          "label": "Legend - Lab 08 scaling loops, exposure ladder and Floci notes",
+          "boundaryType": "auth",
+          "width": 2300,
+          "height": 330
+        },
+        "style": {
+          "width": 2300,
+          "height": 330
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "leg-l0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1390
+        },
+        "data": {
+          "label": "1-4  Students -> IGW -> gateway LoadBalancer (NLB) -> usms-gateway -> backends by Service DNS name",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1434
+        },
+        "data": {
+          "label": "5-6  Ingress group ALB: / -> gateway, /results -> results (Ex 4: campus 10.10.0.0/16 only) - stored, no controller",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1478
+        },
+        "data": {
+          "label": "7  kubectl -> API (:6500)   8  kubelet -> API   9  image pulls via usms-nat   10-11  node role -> S3 (Lab 10)",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1522
+        },
+        "data": {
+          "label": "Ladder: ClusterIP (10.100.x) < NodePort (30080) < LoadBalancer (172.17.0.3 via k3s ServiceLB) < Ingress",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l4",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1566
+        },
+        "data": {
+          "label": "port-forward = one tunnel to one pod via the API server (debugging only)",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l5",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1610
+        },
+        "data": {
+          "label": "Grey (/18) ranges = simulator's own split; real lab CIDRs are in the subnet titles",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1390
+        },
+        "data": {
+          "label": "Loop 1 (pods): HPA reads metrics-server, writes spec.replicas. Observed 2 -> 3 at 63%, held 300 s, back to 2",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1434
+        },
+        "data": {
+          "label": "Loop 2 (nodes): node group desiredSize - update-nodegroup-config failed (UnknownOperationException)",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1478
+        },
+        "data": {
+          "label": "Nothing connects loop 1 to loop 2 without Cluster Autoscaler / Karpenter (not installed - need IRSA)",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1522
+        },
+        "data": {
+          "label": "PDBs: gateway minAvailable 1 (2 replicas -> 1 allowed), enrolment maxUnavailable 1; eviction respects them, delete does not",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r4",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1566
+        },
+        "data": {
+          "label": "Floci 2.4.0 (auto-upgraded): ONE k3s node (~2 CPU allocatable) drawn as 2 workers for real EKS",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r5",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 1610
+        },
+        "data": {
+          "label": "Persistence proven across a k3s restart; a full Floci restart recreates the cluster empty",
+          "boundaryType": "auth",
+          "width": 1120,
+          "height": 38
+        },
+        "style": {
+          "width": 1120,
+          "height": 38
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node-students",
+        "target": "node-igw",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "students -> portal"
+        }
+      },
+      {
+        "id": "e2",
+        "source": "node-igw",
+        "target": "node-nlb",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "TCP",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "NLB is layer 4: TCP 80"
+        }
+      },
+      {
+        "id": "e3",
+        "source": "node-nlb",
+        "target": "node-gateway",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "TCP",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "target-type ip -> gateway pods :80"
+        }
+      },
+      {
+        "id": "e4",
+        "source": "node-gateway",
+        "target": "node-enrolment",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "/enrolment/ by DNS"
+        }
+      },
+      {
+        "id": "e4b",
+        "source": "node-gateway",
+        "target": "node-results",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "/results/ by DNS"
+        }
+      },
+      {
+        "id": "e4c",
+        "source": "node-gateway",
+        "target": "node-timetable",
+        "sourceHandle": "bottom-right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "/timetable/ by DNS"
+        }
+      },
+      {
+        "id": "e5",
+        "source": "node-igw",
+        "target": "node-alb",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "Ingress group ALB (not implemented on Floci)"
+        }
+      },
+      {
+        "id": "e5a",
+        "source": "node-alb",
+        "target": "node-gateway",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "top-right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 6,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "/ -> usms-gateway"
+        }
+      },
+      {
+        "id": "e5b",
+        "source": "node-alb",
+        "target": "node-results",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 6,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "/results -> usms-results (portal + campus rule)"
+        }
+      },
+      {
+        "id": "e7",
+        "source": "node-campus",
+        "target": "node-igw",
+        "sourceHandle": "left",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "campus -> /results only (Ex 4)"
+        }
+      },
+      {
+        "id": "e8",
+        "source": "node-dev",
+        "target": "node-api",
+        "sourceHandle": "top",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 7,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "manages",
+          "label": "kubectl -> :6500"
+        }
+      },
+      {
+        "id": "e9",
+        "source": "node-worker-a",
+        "target": "node-api",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "manages",
+          "label": "kubelet registers"
+        }
+      },
+      {
+        "id": "e10",
+        "source": "node-worker-a",
+        "target": "node-nat",
+        "sourceHandle": "top",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 9,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "image pulls"
+        }
+      },
+      {
+        "id": "e11",
+        "source": "node-worker-a",
+        "target": "node-noderole",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 10,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "instance credentials"
+        }
+      },
+      {
+        "id": "e12",
+        "source": "node-noderole",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 11,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "USMSStudentDataReadWrite"
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab08-portal",
+      "name": "Student reaches enrolment through the LoadBalancer",
+      "method": "GET",
+      "path": "/enrolment/",
+      "startNodeId": "node-students",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}
