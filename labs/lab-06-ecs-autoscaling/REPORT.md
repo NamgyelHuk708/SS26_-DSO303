@@ -1,11 +1,5 @@
 # AWS Practical Laboratory Report
 
-**Name:** Namgyel Wangchuk
-**Student No.:** 02230291
-**Module:** DSO303
-**Practical:** Lab 06 – Implementing Auto Scaling for an ECS-Based Application
-**Date:** 11 October 2026
-
 **Tools used:** Floci (local AWS emulator) running under Docker Compose in hybrid storage mode, AWS CLI v1, jq, python3, git, nano
 
 **Floci support path: C – no Application Auto Scaling.** Every `aws application-autoscaling` call returns `UnknownOperationException`. Following the lab's Path C instructions, I informed my instructor and did everything that does not need that API: the CloudWatch custom metric and alarm, all the scaling policy templates, the resource ID, the persistence test, the verify and cleanup scripts, Exercises 3–5, Exercises 1–2 as templates and written answers, and the review questions.
@@ -57,8 +51,6 @@ I started Floci, loaded the six env files and confirmed that Labs 02–05 were u
 
 ### 6.1 CLI Output
 
-**Screenshot 1**
-
 Load the six env files
 
 ![Step 1](LAB_06(image)/1.png)
@@ -66,8 +58,6 @@ Load the six env files
 *All values from Labs 04 and 05 loaded; the grace period is None, a Floci limitation from Lab 05*
 
 ---
-
-**Screenshot 2**
 
 Labs 02–05 still intact, and the service at its baseline
 
@@ -77,8 +67,6 @@ Labs 02–05 still intact, and the service at its baseline
 
 ---
 
-**Screenshot 3**
-
 Support probe
 
 ![Step 3](LAB_06(image)/3.png)
@@ -86,8 +74,6 @@ Support probe
 *Every Application Auto Scaling call is "not available"; CloudWatch, IAM, ECS and ELBv2 are supported*
 
 ---
-
-**Screenshot 4**
 
 Confirming Path C
 
@@ -97,8 +83,6 @@ Confirming Path C
 
 ---
 
-**Screenshot 5**
-
 Service-linked role (Step 4)
 
 ![Service-linked role](LAB_06(image)/c2.png)
@@ -106,8 +90,6 @@ Service-linked role (Step 4)
 *create-service-linked-role returns UnsupportedOperation and the role does not exist (NoSuchEntity)*
 
 ---
-
-**Screenshot 6**
 
 Resource ID built from the service ARN (Step 5)
 
@@ -117,8 +99,6 @@ Resource ID built from the service ARN (Step 5)
 
 ---
 
-**Screenshot 7**
-
 Scaling policy templates (Steps 7, 9, 10, 13)
 
 ![Templates](LAB_06(image)/c4.png)
@@ -126,8 +106,6 @@ Scaling policy templates (Steps 7, 9, 10, 13)
 *Four valid JSON templates with no unexpanded variables; the ResourceLabel has 6 segments; put-scaling-policy fails with UnknownOperationException*
 
 ---
-
-**Screenshot 8**
 
 Custom metric and alarm (Step 10)
 
@@ -137,8 +115,6 @@ Custom metric and alarm (Step 10)
 
 ---
 
-**Screenshot 9**
-
 Pushing the metric and firing the alarm (Step 12)
 
 ![Fire](LAB_06(image)/c6_fire.png)
@@ -146,8 +122,6 @@ Pushing the metric and firing the alarm (Step 12)
 *The metric was pushed to 260 but the alarm stayed INSUFFICIENT_DATA for 6 polls; forced to ALARM with set-alarm-state; desiredCount stayed at 2*
 
 ---
-
-**Screenshot 10**
 
 What real AWS would have done
 
@@ -157,8 +131,6 @@ What real AWS would have done
 
 ---
 
-**Screenshot 11**
-
 Persistence after a restart (Step 14)
 
 ![Persistence](LAB_06(image)/c8.png)
@@ -166,8 +138,6 @@ Persistence after a restart (Step 14)
 *The alarm and metric survived; the first diff failed only because of a hidden VS Code terminal marker; both EC2 instances came back stopped and were started again*
 
 ---
-
-**Screenshot 12**
 
 What this lab changed about the service (Step 15)
 
@@ -177,8 +147,6 @@ What this lab changed about the service (Step 15)
 
 ---
 
-**Screenshot 13**
-
 configs/lab-06.env (Step 16)
 
 ![Env](LAB_06(image)/c10.png)
@@ -186,8 +154,6 @@ configs/lab-06.env (Step 16)
 *22 exports, no empty values; the policy ARNs are recorded as not-created*
 
 ---
-
-**Screenshot 14**
 
 Verify script
 
@@ -197,8 +163,6 @@ Verify script
 
 ---
 
-**Screenshot 15**
-
 Cleanup script
 
 ![Cleanup](LAB_06(image)/c11-cleanup.png)
@@ -206,8 +170,6 @@ Cleanup script
 *lab-06-cleanup.sh passes bash -n and was not run*
 
 ---
-
-**Screenshot 16**
 
 Cleanup hint strings (Step 17 part 1)
 

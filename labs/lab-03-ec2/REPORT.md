@@ -1,7 +1,6 @@
 # AWS Practical Laboratory Report
 
 **Course:** DSO303
-**Practical:** Lab 03 — Amazon EC2 and Deploying the USMS Application
 **Environment:** Floci (local AWS emulator) via Docker Compose, AWS CLI v2
 **Builds on:** Lab 01 (IAM) and Lab 02 (VPC and Networking)
 
@@ -79,7 +78,6 @@ The Lab 02 network was then re-verified before building on top of it.
 An Amazon Linux AMI was located through `describe-images` rather than being hard-coded, which is the correct habit even though this practical is running against a local emulator rather than a real AWS region.
 
 ![Step 3 - AMI selection](LAB_03(image)/step3.png)
-
 
 An EC2 key pair was then created, with the private key redirected directly to a file so that it never appeared in the terminal.
 

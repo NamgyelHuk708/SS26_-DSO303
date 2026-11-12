@@ -1,11 +1,5 @@
 # AWS Practical Laboratory Report
 
-**Name:** Namgyel Wangchuk
-**Student No.:** 02230291
-**Module:** DSO303
-**Practical:** Lab 04 – Amazon ECS (Deploying the USMS Enrolment Service on Fargate)
-**Date:** 11 October 2026
-
 **Tools used:** Floci (local AWS emulator) running under Docker Compose in hybrid storage mode, AWS CLI v1, jq, python3, git, nano
 
 ---
@@ -57,8 +51,6 @@ I started Floci, loaded the env files from Labs 1 to 3 and ran the Lab 2 and Lab
 
 ### 6.1 CLI Output
 
-**Screenshot 1**
-
 Resume the environment and load the env files
 
 ![Step 1](LAB_04(image)/step1.png)
@@ -66,8 +58,6 @@ Resume the environment and load the env files
 *All 8 values from Labs 2 and 3 loaded, and whoami confirms account 000000000000 (Floci, not real AWS)*
 
 ---
-
-**Screenshot 2**
 
 Lab 02 verification
 
@@ -77,8 +67,6 @@ Lab 02 verification
 
 ---
 
-**Screenshot 3**
-
 Lab 03 verification
 
 ![Step 2 - Lab 03](LAB_04(image)/step2(2).png)
@@ -86,8 +74,6 @@ Lab 03 verification
 *verify-lab-03.sh gives PASS=33 FAIL=3, the same three documented Floci limitations as in Lab 3. The two checks Lab 4 depends on (private route table has no IGW route, usms-web-01 carries usms-app-sg) both pass*
 
 ---
-
-**Screenshot 4**
 
 Probe what this Floci build supports
 
@@ -97,8 +83,6 @@ Probe what this Floci build supports
 
 ---
 
-**Screenshot 5**
-
 Assume the developer role
 
 ![Step 4.1](LAB_04(image)/step4.1.png)
@@ -106,8 +90,6 @@ Assume the developer role
 *get-caller-identity shows an assumed-role ARN for usms-developer-role*
 
 ---
-
-**Screenshot 6**
 
 Create the ECS cluster and return to normal identity
 
@@ -117,8 +99,6 @@ Create the ECS cluster and return to normal identity
 
 ---
 
-**Screenshot 7**
-
 Create the log group
 
 ![Step 5](LAB_04(image)/step5.png)
@@ -126,8 +106,6 @@ Create the log group
 */usms/ecs/enrolment created with a 7-day retention policy*
 
 ---
-
-**Screenshot 8**
 
 Task execution role
 
@@ -137,8 +115,6 @@ Task execution role
 
 ---
 
-**Screenshot 9**
-
 Task role reusing the Lab 1 policy
 
 ![Step 7](LAB_04(image)/step7.png)
@@ -146,8 +122,6 @@ Task role reusing the Lab 1 policy
 *usms-ecs-task-role has USMSStudentDataReadWrite attached, the same policy document Lab 3 Step 11 printed for the EC2 role*
 
 ---
-
-**Screenshot 10**
 
 Enrolment security group
 
@@ -157,8 +131,6 @@ Enrolment security group
 
 ---
 
-**Screenshot 11**
-
 Register the task definition
 
 ![Step 9](LAB_04(image)/step9.png)
@@ -166,8 +138,6 @@ Register the task definition
 *usms-enrolment:1 is ACTIVE, awsvpc, FARGATE, 256 CPU / 512 MiB, with two different role ARNs for exec and task*
 
 ---
-
-**Screenshot 12**
 
 Checking the log configuration
 
@@ -177,8 +147,6 @@ Checking the log configuration
 
 ---
 
-**Screenshot 13**
-
 Create the service
 
 ![Step 10](LAB_04(image)/step10.png)
@@ -186,8 +154,6 @@ Create the service
 *The service was created. The waiter crashed on a null field, so I polled by hand: running went from 0 to 2 within about 5 seconds*
 
 ---
-
-**Screenshot 14**
 
 Read the service back (the four numbers)
 
@@ -197,8 +163,6 @@ Read the service back (the four numbers)
 
 ---
 
-**Screenshot 15**
-
 Your turn: change the desired count by hand
 
 ![Step 11 your turn](LAB_04(image)/step11(myturn).png)
@@ -206,8 +170,6 @@ Your turn: change the desired count by hand
 *Desired 3 with running still 2, then back to desired 2 and running 2*
 
 ---
-
-**Screenshot 16**
 
 Write configs/lab-04.env
 
@@ -217,8 +179,6 @@ Write configs/lab-04.env
 
 ---
 
-**Screenshot 17**
-
 Run the verify script
 
 ![Verify](LAB_04(image)/step13-verify.png)
@@ -227,8 +187,6 @@ Run the verify script
 
 ---
 
-**Screenshot 18**
-
 Cleanup script syntax check
 
 ![Cleanup](LAB_04(image)/step13-cleanup.png)
@@ -236,8 +194,6 @@ Cleanup script syntax check
 *lab-04-cleanup.sh passes bash -n and was not run*
 
 ---
-
-**Screenshot 19**
 
 Commit
 

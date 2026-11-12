@@ -1,11 +1,5 @@
 # AWS Practical Laboratory Report
 
-**Name:** Namgyel Wangchuk
-**Student No.:** 02230291
-**Module:** DSO303
-**Practical:** Lab 07 – Deploying a Microservices Application on Amazon EKS
-**Date:** 13 October 2026
-
 **Tools used:** Floci (local AWS emulator, Docker Compose, hybrid storage), AWS CLI v1, kubectl (client and server v1.34), Docker, python3, git, nano
 
 **Floci support path: A.** `aws eks` works and starts a real k3s Kubernetes cluster in a Docker container, so both the AWS half and the Kubernetes half of this lab really ran.
@@ -58,8 +52,6 @@ I loaded the env files, checked Labs 02 and 04 were still intact, and probed Flo
 
 ### 6.1 CLI Output
 
-**Screenshot 1**
-
 Environment and earlier labs
 
 ![Step 1](LAB_07(image)/1.png)
@@ -67,8 +59,6 @@ Environment and earlier labs
 *Identity 000000000000; verify-lab-02 32/1 and verify-lab-04 38/1 (known Floci failures); all four subnets present*
 
 ---
-
-**Screenshot 2**
 
 Support probe
 
@@ -78,8 +68,6 @@ Support probe
 
 ---
 
-**Screenshot 3**
-
 Trust policies
 
 ![Step 4](LAB_07(image)/4.png)
@@ -87,8 +75,6 @@ Trust policies
 *cluster role trusts eks.amazonaws.com, node role trusts ec2.amazonaws.com*
 
 ---
-
-**Screenshot 4**
 
 Permissions policies
 
@@ -98,8 +84,6 @@ Permissions policies
 
 ---
 
-**Screenshot 5**
-
 Cluster role and security group
 
 ![Step 6.1](LAB_07(image)/6.1.png)
@@ -107,8 +91,6 @@ Cluster role and security group
 *usms-eks-cluster-role created, USMSEKSClusterPolicy attached, usms-eks-cluster-sg sg-179d99087f431aeeb with tcp/443 from 10.0.0.0/16*
 
 ---
-
-**Screenshot 6**
 
 Cluster role verify
 
@@ -118,8 +100,6 @@ Cluster role verify
 
 ---
 
-**Screenshot 7**
-
 Node role and Lab 01's policy
 
 ![Step 7.1](LAB_07(image)/7.1.png)
@@ -127,8 +107,6 @@ Node role and Lab 01's policy
 *USMSStudentDataReadWrite now held by three roles: usms-ec2-app-role, usms-ecs-task-role, usms-eks-node-role*
 
 ---
-
-**Screenshot 8**
 
 Node role verify
 
@@ -138,8 +116,6 @@ Node role verify
 
 ---
 
-**Screenshot 9**
-
 Create-cluster request
 
 ![Step 8.1](LAB_07(image)/8.1.png)
@@ -147,8 +123,6 @@ Create-cluster request
 *Request body with four real subnet IDs, the cluster SG, the role ARN and the _lb_ports_ tag; 0 unexpanded variables*
 
 ---
-
-**Screenshot 10**
 
 Creating the cluster
 
@@ -158,8 +132,6 @@ Creating the cluster
 
 ---
 
-**Screenshot 11**
-
 Cluster details
 
 ![Step 9.1](LAB_07(image)/9.1.png)
@@ -167,8 +139,6 @@ Cluster details
 *ACTIVE, version 1.30, endpoint https://localhost:6500, 4 subnets, the cluster SG, _lb_ports_ 8081,8082; Vpc empty (Floci)*
 
 ---
-
-**Screenshot 12**
 
 Your turn: version and OIDC issuer
 
@@ -178,8 +148,6 @@ Your turn: version and OIDC issuer
 
 ---
 
-**Screenshot 13**
-
 Managed node group
 
 ![Step 10.1](LAB_07(image)/10.1.png)
@@ -187,8 +155,6 @@ Managed node group
 *usms-eks-nodes ACTIVE straight away*
 
 ---
-
-**Screenshot 14**
 
 Node group details
 
@@ -198,8 +164,6 @@ Node group details
 
 ---
 
-**Screenshot 15**
-
 kubectl connected
 
 ![Step 11.1](LAB_07(image)/11.1.png)
@@ -207,8 +171,6 @@ kubectl connected
 *update-kubeconfig worked; control plane at https://localhost:6500; one node Ready, v1.34.1+k3s1*
 
 ---
-
-**Screenshot 16**
 
 kubectl permissions and API
 
@@ -218,8 +180,6 @@ kubectl permissions and API
 
 ---
 
-**Screenshot 17**
-
 Namespace
 
 ![Step 12](LAB_07(image)/12.png)
@@ -227,8 +187,6 @@ Namespace
 *Namespace usms Active with labels lab=07, project=usms, tier=app, set as the context default*
 
 ---
-
-**Screenshot 18**
 
 usms-enrolment applied
 
@@ -238,8 +196,6 @@ usms-enrolment applied
 
 ---
 
-**Screenshot 19**
-
 usms-enrolment running
 
 ![Step 13.2](LAB_07(image)/13.2.png)
@@ -247,8 +203,6 @@ usms-enrolment running
 *2/2 ready, 2 pods (10.42.0.5, 10.42.0.6), ClusterIP 10.43.203.54, 2 endpoints*
 
 ---
-
-**Screenshot 20**
 
 usms-enrolment answers
 
@@ -258,8 +212,6 @@ usms-enrolment answers
 
 ---
 
-**Screenshot 21**
-
 usms-results
 
 ![Step 14](LAB_07(image)/14.png)
@@ -267,8 +219,6 @@ usms-results
 *Both Deployments 2/2; enrolment MAXUNAVAIL 0, results 25%*
 
 ---
-
-**Screenshot 22**
 
 usms-gateway
 
@@ -278,8 +228,6 @@ usms-gateway
 
 ---
 
-**Screenshot 23**
-
 DNS from inside the cluster
 
 ![Step 16.1](LAB_07(image)/16.1.png)
@@ -287,8 +235,6 @@ DNS from inside the cluster
 *CoreDNS 10.43.0.10 resolves the Service names to ClusterIPs 10.43.203.54 and 10.43.241.178*
 
 ---
-
-**Screenshot 24**
 
 Routes through the gateway
 
@@ -298,8 +244,6 @@ Routes through the gateway
 
 ---
 
-**Screenshot 25**
-
 Load spreading
 
 ![Step 16.3](LAB_07(image)/16.3.png)
@@ -307,8 +251,6 @@ Load spreading
 *12 requests split 6 / 6 across the two enrolment pods*
 
 ---
-
-**Screenshot 26**
 
 Your turn: delete a pod
 
@@ -318,8 +260,6 @@ Your turn: delete a pod
 
 ---
 
-**Screenshot 27**
-
 Your turn: new pod in the tally
 
 ![Step 16 your turn 2](LAB_07(image)/16(yourturn.2).png)
@@ -327,8 +267,6 @@ Your turn: new pod in the tally
 *The replacement pod 99m7g now serves traffic alongside gv46t*
 
 ---
-
-**Screenshot 28**
 
 Secret created outside git
 
@@ -338,8 +276,6 @@ Secret created outside git
 
 ---
 
-**Screenshot 29**
-
 base64 is not encryption
 
 ![Step 17.2](LAB_07(image)/17.2.png)
@@ -347,8 +283,6 @@ base64 is not encryption
 *The token decoded to plain text with one command*
 
 ---
-
-**Screenshot 30**
 
 Secret used by the Deployment
 
@@ -358,8 +292,6 @@ Secret used by the Deployment
 
 ---
 
-**Screenshot 31**
-
 ConfigMap change and restart
 
 ![Step 18.1](LAB_07(image)/18.1.png)
@@ -367,8 +299,6 @@ ConfigMap change and restart
 *Still 1.0.0 after the ConfigMap change; 1.1.0 only after rollout restart, with a new ReplicaSet hash*
 
 ---
-
-**Screenshot 32**
 
 Rollout history
 
@@ -378,8 +308,6 @@ Rollout history
 
 ---
 
-**Screenshot 33**
-
 Rollback
 
 ![Step 18.2 undo](LAB_07(image)/18.2(undo).png)
@@ -387,8 +315,6 @@ Rollback
 *rollout undo back to ReplicaSet 7d8557c58d, but the response still says 1.1.0 - the ConfigMap is not rolled back*
 
 ---
-
-**Screenshot 34**
 
 Your turn: image change (watch)
 
@@ -398,8 +324,6 @@ Your turn: image change (watch)
 
 ---
 
-**Screenshot 35**
-
 Your turn: image change and undo
 
 ![Step 18 your turn 2](LAB_07(image)/18(yourturn.2).png)
@@ -407,8 +331,6 @@ Your turn: image change and undo
 *rollout status timed out (slow pull), undo restored nginx:1.27-alpine; history shows revisions 2 and 3*
 
 ---
-
-**Screenshot 36**
 
 Failure 1: ImagePullBackOff
 
@@ -418,8 +340,6 @@ Failure 1: ImagePullBackOff
 
 ---
 
-**Screenshot 37**
-
 Failure 2: FailedScheduling
 
 ![Step 19.2](LAB_07(image)/19.2.png)
@@ -427,8 +347,6 @@ Failure 2: FailedScheduling
 *usms-toobig Pending: 0/1 nodes are available: Insufficient cpu, Insufficient memory*
 
 ---
-
-**Screenshot 38**
 
 Failure 3: CrashLoopBackOff
 
@@ -438,8 +356,6 @@ Failure 3: CrashLoopBackOff
 
 ---
 
-**Screenshot 39**
-
 Events after the failures
 
 ![Step 19.4](LAB_07(image)/19.4.png)
@@ -447,8 +363,6 @@ Events after the failures
 *Events show the full image pull error; back to 5 healthy pods*
 
 ---
-
-**Screenshot 40**
 
 ECS and EKS side by side
 
@@ -458,8 +372,6 @@ ECS and EKS side by side
 
 ---
 
-**Screenshot 41**
-
 IRSA
 
 ![Step 21](LAB_07(image)/21.png)
@@ -467,8 +379,6 @@ IRSA
 *OIDC issuer None, no provider registered; ServiceAccount usms-enrolment-sa created without a role annotation*
 
 ---
-
-**Screenshot 42**
 
 Before and during the restart
 
@@ -478,8 +388,6 @@ Before and during the restart
 
 ---
 
-**Screenshot 43**
-
 After the restart
 
 ![Step 22.2](LAB_07(image)/22.2.png)
@@ -487,8 +395,6 @@ After the restart
 *Cluster and node group records re-derived from the API, but all Kubernetes objects missing*
 
 ---
-
-**Screenshot 44**
 
 Why: the Floci log
 
@@ -498,8 +404,6 @@ Why: the Floci log
 
 ---
 
-**Screenshot 45**
-
 Rebuilding the cluster
 
 ![Step 22.4](LAB_07(image)/22.4.png)
@@ -507,8 +411,6 @@ Rebuilding the cluster
 *Records deleted and recreated from the templates: ACTIVE, https://localhost:6500, 8081,8082*
 
 ---
-
-**Screenshot 46**
 
 Re-applying the application
 
@@ -518,8 +420,6 @@ Re-applying the application
 
 ---
 
-**Screenshot 47**
-
 Kubernetes itself persists
 
 ![Step 22.6](LAB_07(image)/22.6.png)
@@ -528,8 +428,6 @@ Kubernetes itself persists
 
 ---
 
-**Screenshot 48**
-
 configs/lab-07.env
 
 ![Step 23](LAB_07(image)/23.png)
@@ -537,8 +435,6 @@ configs/lab-07.env
 *All values populated, lb_ports 8081,8082, endpoint port 6500, the right SG, 21 exports*
 
 ---
-
-**Screenshot 49**
 
 Verify, cleanup and commit
 

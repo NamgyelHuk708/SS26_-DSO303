@@ -1,11 +1,5 @@
 # AWS Practical Laboratory Report
 
-**Name:** Namgyel Wangchuk
-**Student No.:** 02230291
-**Module:** DSO303
-**Practical:** Lab 05 – Putting the ECS Service Behind an Application Load Balancer
-**Date:** 11 October 2026
-
 **Tools used:** Floci (local AWS emulator) running under Docker Compose in hybrid storage mode, AWS CLI v1, jq, python3, curl, git, nano
 
 ---
@@ -48,7 +42,6 @@ The ALB has one node in each public subnet. The listener on port 80 has a rule a
 
 ![alt text](LAB_05(image)/aws-architecture-diagram(3).png)
 
-
 ## 5. Implementation Procedure
 
 I started Floci, loaded the five env files and re-ran the Lab 2, 3 and 4 verify scripts to make sure nothing had changed. A probe showed that this Floci build supports ELBv2. I created `usms-alb-sg` allowing port 80 (and later 443) from the internet, then the internet-facing ALB in both public subnets. Next I created `usms-enrolment-tg` with target type `ip` and a health check on `/`, set the deregistration delay to 30 seconds and the algorithm to least outstanding requests, and created the HTTP:80 listener forwarding to it. I added a rule on `usms-enrolment-sg` allowing port 80 from `usms-alb-sg`, then attached the existing ECS service to the target group. Floci ignored the in-place update, so I used the lab's fallback and recreated the service with the load balancer attached. I watched the service register its own targets, scaled it to 3 and back to 2, tried to reach the ALB with curl, and recorded a control-plane proof of the whole path. I then forced a deployment, added a fixed-response rule for `/alb-health`, and proved everything survives a Floci restart. Finally I removed Lab 4's direct rule from the web tier (the cutover), checked the loop back to `usms-web-01`, wrote `configs/lab-05.env`, built the verify and cleanup scripts and committed. After that I did the five exercises (in `exercises.md`).
@@ -57,18 +50,13 @@ I started Floci, loaded the five env files and re-ran the Lab 2, 3 and 4 verify 
 
 ### 6.1 CLI Output
 
-**Screenshot 1**
-
 Load the environment and check both public subnets
 
 ![Step 1](LAB_05(image)/step1.png)
 
 *All 12 values loaded; the two public subnets are in us-east-1a and us-east-1b*
 
-
 ---
-
-**Screenshot 2**
 
 Labs 2, 3 and 4 still intact
 
@@ -76,11 +64,7 @@ Labs 2, 3 and 4 still intact
 
 *Lab 2 PASS=32 FAIL=1, Lab 3 PASS=33 FAIL=3, Lab 4 PASS=37 FAIL=1 – the same documented Floci limitations as before, nothing new*
 
-
-
 ---
-
-**Screenshot 3**
 
 Probe what this Floci build supports for ELBv2
 
@@ -88,11 +72,7 @@ Probe what this Floci build supports for ELBv2
 
 *ELBv2 answers. describe-listeners with a fake ARN returned an empty list instead of a ValidationError*
 
-
-
 ---
-
-**Screenshot 4**
 
 The load balancer's security group
 
@@ -100,11 +80,7 @@ The load balancer's security group
 
 *usms-alb-sg: one inbound rule, tcp/80 from 0.0.0.0/0, no source group, one default outbound rule*
 
-
-
 ---
-
-**Screenshot 5**
 
 Your turn: port 443
 
@@ -112,11 +88,7 @@ Your turn: port 443
 
 *A second rule for tcp/443 from 0.0.0.0/0. The port is open but nothing listens on it yet*
 
-
-
 ---
-
-**Screenshot 6**
 
 Create the Application Load Balancer
 
@@ -124,10 +96,7 @@ Create the Application Load Balancer
 
 *ALB created with DNS name usms-enrolment-alb-a152a9ed117a4a9b.elb.floci and active straight away*
 
-
 ---
-
-**Screenshot 7**
 
 Read the load balancer back and set its attributes
 
@@ -135,10 +104,7 @@ Read the load balancer back and set its attributes
 
 *internet-facing, application, one node in us-east-1a and one in us-east-1b, carrying usms-alb-sg; idle timeout 60 and drop invalid headers true*
 
-
 ---
-
-**Screenshot 8**
 
 Create the target group
 
@@ -148,8 +114,6 @@ Create the target group
 
 ---
 
-**Screenshot 9**
-
 Your turn: widen the matcher and put it back
 
 ![Step 6 your turn](LAB_05(image)/step6-myturn.png)
@@ -157,8 +121,6 @@ Your turn: widen the matcher and put it back
 *Matcher changed to 200-399 and back to 200 without recreating anything*
 
 ---
-
-**Screenshot 10**
 
 Target group attributes
 
@@ -168,8 +130,6 @@ Target group attributes
 
 ---
 
-**Screenshot 11**
-
 Create the listener
 
 ![Step 8](LAB_05(image)/step8.png)
@@ -177,8 +137,6 @@ Create the listener
 *HTTP:80 listener forwarding to usms-enrolment-tg; the target group now shows 1 attached load balancer*
 
 ---
-
-**Screenshot 12**
 
 Let the load balancer reach the tasks
 
@@ -188,8 +146,6 @@ Let the load balancer reach the tasks
 
 ---
 
-**Screenshot 13**
-
 Attach the service to the target group
 
 ![Step 10](LAB_05(image)/step10.png)
@@ -197,8 +153,6 @@ Attach the service to the target group
 *update-service returned LB null, so the service was recreated with the load balancer attached; grace period still reads null*
 
 ---
-
-**Screenshot 14**
 
 Targets registered by the service
 
@@ -208,8 +162,6 @@ Targets registered by the service
 
 ---
 
-**Screenshot 15**
-
 ECS health and target health side by side
 
 ![Step 11.2](LAB_05(image)/step11.2.png)
@@ -217,8 +169,6 @@ ECS health and target health side by side
 *ECS healthStatus is None for every task, while the target group says healthy. list-tasks also returns STOPPED tasks*
 
 ---
-
-**Screenshot 16**
 
 Your turn: desired count 3 and back to 2
 
@@ -228,8 +178,6 @@ Your turn: desired count 3 and back to 2
 
 ---
 
-**Screenshot 17**
-
 Trying the data path
 
 ![Step 12.1](LAB_05(image)/step12.1.png)
@@ -237,8 +185,6 @@ Trying the data path
 *The .elb.floci name does not resolve and curl got http_code=000 – no request reached the ALB*
 
 ---
-
-**Screenshot 18**
 
 Control-plane proof of the path
 
@@ -248,8 +194,6 @@ Control-plane proof of the path
 
 ---
 
-**Screenshot 19**
-
 The two port-80 rules on usms-enrolment-sg
 
 ![Step 13.1](LAB_05(image)/step13.1.png)
@@ -257,8 +201,6 @@ The two port-80 rules on usms-enrolment-sg
 *Two ingress rules on port 80, both with FromGroup None, told apart only by their rule IDs*
 
 ---
-
-**Screenshot 20**
 
 Lab 04's script after the cutover attempt
 
@@ -268,8 +210,6 @@ Lab 04's script after the cutover attempt
 
 ---
 
-**Screenshot 21**
-
 Revoking Lab 04's direct rule
 
 ![Step 13.3](LAB_05(image)/step13.3.png)
@@ -277,8 +217,6 @@ Revoking Lab 04's direct rule
 *revoke-security-group-ingress returned True, but the readback still lists sgr-b7b698f916341dcdd*
 
 ---
-
-**Screenshot 22**
 
 Forced deployment
 
@@ -288,8 +226,6 @@ Forced deployment
 
 ---
 
-**Screenshot 23**
-
 Before and after the forced deployment
 
 ![Step 14.2](LAB_05(image)/step14.2.png)
@@ -297,8 +233,6 @@ Before and after the forced deployment
 *Same task definition, same counts, and also the same task ARNs and IPs – Floci did not replace any task*
 
 ---
-
-**Screenshot 24**
 
 Listener rule at priority 10
 
@@ -308,8 +242,6 @@ Listener rule at priority 10
 
 ---
 
-**Screenshot 25**
-
 Persistence after a restart
 
 ![Step 16](LAB_05(image)/step16.png)
@@ -317,8 +249,6 @@ Persistence after a restart
 *Every ARN re-derived from the API after a Floci stop/start, and PERSISTENCE PROVEN*
 
 ---
-
-**Screenshot 26**
 
 Pre- and post-restart records
 
@@ -328,8 +258,6 @@ Pre- and post-restart records
 
 ---
 
-**Screenshot 27**
-
 Closing the loop
 
 ![Step 17](LAB_05(image)/step17.png)
@@ -337,8 +265,6 @@ Closing the loop
 *CUTOVER CONFIRMED (from the ingress file) and LOOP CLOSED back to usms-web-01; Lab=05 tags on the ALB SG, ALB and target group*
 
 ---
-
-**Screenshot 28**
 
 Write configs/lab-05.env
 
@@ -348,8 +274,6 @@ Write configs/lab-05.env
 
 ---
 
-**Screenshot 29**
-
 Run the verify script
 
 ![Verify](LAB_05(image)/step19-verify.png)
@@ -358,8 +282,6 @@ Run the verify script
 
 ---
 
-**Screenshot 30**
-
 Cleanup script syntax check
 
 ![Cleanup](LAB_05(image)/step19-cleanup.png)
@@ -367,8 +289,6 @@ Cleanup script syntax check
 *lab-05-cleanup.sh passes bash -n and was not run*
 
 ---
-
-**Screenshot 31**
 
 Commit
 

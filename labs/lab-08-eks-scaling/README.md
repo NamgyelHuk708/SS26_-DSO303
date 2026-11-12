@@ -1,11 +1,5 @@
 # AWS Practical Laboratory Report
 
-**Name:** Namgyel Wangchuk
-**Student No.:** 02230291
-**Module:** DSO303
-**Practical:** Lab 08 – EKS Scaling and Service Exposure
-**Date:** 9 November 2026
-
 **Tools used:** Floci (local AWS emulator, Docker Compose, hybrid storage – **upgraded to 2.4.0**, see Section 7), AWS CLI v1, kubectl, k3s v1.30.10 (the EKS cluster from Lab 07), Docker, python3, git
 
 **Support path: A.** The `eks` API answers and the Kubernetes cluster is real. One AWS-side call (`update-nodegroup-config`) is a recorded Known Issue and was replaced by the course's documented alternative.
@@ -56,19 +50,13 @@ Before starting, I found that `floci-up.sh` had pulled a new `floci/floci:latest
 
 ### 6.1 CLI Output
 
-**Screenshot 1**
-
 Recovering the cluster after the Floci upgrade
 
 ![Step 0](LAB_08(image)/0.3.png)
 
 *Lab 07 application re-applied from manifests on the new k3s cluster; smoke test passed through gateway, enrolment, results and timetable*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 2**
 
 Starting checks
 
@@ -76,11 +64,7 @@ Starting checks
 
 *Context usms-eks-k3s, CPU request 50m, _lb_ports_ 8081,8082, verify-lab-07 PASS=30 FAIL=0*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 3**
 
 Baseline
 
@@ -88,11 +72,7 @@ Baseline
 
 *4 Deployments at their Lab 07 counts, all Services ClusterIP, 1 node (12 CPU capacity)*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 4**
 
 Scaling by hand to 5
 
@@ -100,11 +80,7 @@ Scaling by hand to 5
 
 *5/5 on the same ReplicaSet 6cc746dc8b – kubectl scale writes one field, no new ReplicaSet*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 5**
 
 Watcher during the scale
 
@@ -112,11 +88,7 @@ Watcher during the scale
 
 *New pods Running 0/1 at 2 s, 1/1 at 6 s – endpoints only grow when the readiness probe passes; Terminating on scale-in*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 6**
 
 Scaling back down
 
@@ -124,11 +96,7 @@ Scaling back down
 
 *Back to 2 endpoints; traffic had been spread over all five pods (10/9/7/7/7 of 40)*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 7**
 
 Configuration drift
 
@@ -136,11 +104,7 @@ Configuration drift
 
 *Cluster 6, file 2 – kubectl apply silently put it back to 2*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 8**
 
 kubectl diff and restore
 
@@ -148,11 +112,7 @@ kubectl diff and restore
 
 *diff showed replicas 2 -> 3 before applying; restored to 2/2, no .bak files, git diff empty*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 9**
 
 QoS classes
 
@@ -160,11 +120,7 @@ QoS classes
 
 *Every pod Burstable, 50m request / 200m limit*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 10**
 
 The scheduler's arithmetic
 
@@ -172,11 +128,7 @@ The scheduler's arithmetic
 
 *CPU requests 500m = 25 % of allocatable (about 2 CPUs, not the 12 of capacity); 50 % target = 25m per pod*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 11**
 
 Your turn: Guaranteed and back
 
@@ -184,11 +136,7 @@ Your turn: Guaranteed and back
 
 *Burstable -> Guaranteed (requests = limits) -> Burstable; the pod was replaced each time, the original ReplicaSet reused at the end*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 12**
 
 Metrics pipeline
 
@@ -196,11 +144,7 @@ Metrics pipeline
 
 *metrics API AVAILABLE (k3s ships metrics-server); pods idle at 1m = 2 % of the request*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 13**
 
 The HPA
 
@@ -208,11 +152,7 @@ The HPA
 
 *usms-enrolment-hpa cpu 2%/50%, min 2 max 8; ScalingActive True "percentage of request"*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 14**
 
 Load generator
 
@@ -220,11 +160,7 @@ Load generator
 
 *usms-loadgen: 3 busybox pods looping wget through the gateway*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 15**
 
 The HPA scaling out
 
@@ -232,11 +168,7 @@ The HPA scaling out
 
 *CPU 38 % -> 63 % and replicas 2 -> 3 (ceil(2 x 63/50) = 3); new pod Ready within 10 s*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 16**
 
 Holding, then scaling in
 
@@ -244,11 +176,7 @@ Holding, then scaling in
 
 *Load removed: CPU 2 % at once, replicas held at 3 for the 300 s window, then back to 2*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 17**
 
 The HPA's own explanation
 
@@ -256,11 +184,7 @@ The HPA's own explanation
 
 *SuccessfulRescale events with the reason strings ("above target", "All metrics below target")*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 18**
 
 Node group before
 
@@ -268,11 +192,7 @@ Node group before
 
 *usms-eks-nodes ACTIVE, min 2 / max 4 / desired 2, t3.small, private subnets, labels workload=usms tier=app*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 19**
 
 The resize fails
 
@@ -280,11 +200,7 @@ The resize fails
 
 *update-nodegroup-config: UnknownOperationException (Known Issue); scaling config unchanged; still 1 node*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 20**
 
 The documented alternative
 
@@ -292,11 +208,7 @@ The documented alternative
 
 *Floci 2.4.0 version and the HPA drill evidence (Known Issues page, Lab 08)*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 21**
 
 Node labels and the selector
 
@@ -304,11 +216,7 @@ Node labels and the selector
 
 *The node group's labels reached the node; nodeSelector workload=usms rolled out*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 22**
 
 Selector enforcement
 
@@ -316,11 +224,7 @@ Selector enforcement
 
 *workload=nonexistent: new pod Pending with FailedScheduling "didn't match Pod's node affinity/selector", the old pods kept serving*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 23**
 
 Put back and recorded in Git
 
@@ -328,11 +232,7 @@ Put back and recorded in Git
 
 *nodeSelector restored, added to manifests/lab-07/20-enrolment.yaml, kubectl diff empty*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 24**
 
 PodDisruptionBudgets
 
@@ -340,11 +240,7 @@ PodDisruptionBudgets
 
 *gateway minAvailable 1 -> ALLOWED 0; enrolment maxUnavailable 1 -> ALLOWED 1*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 25**
 
 Eviction vs delete
 
@@ -352,11 +248,7 @@ Eviction vs delete
 
 *Eviction API: TooManyRequests "would violate the pod's disruption budget"; plain delete went straight through*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 26**
 
 Drain (dry run)
 
@@ -364,11 +256,7 @@ Drain (dry run)
 
 *What a drain would evict; node still Ready*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 27**
 
 ClusterIP from the laptop
 
@@ -376,11 +264,7 @@ ClusterIP from the laptop
 
 *10.100.75.58 is not routable from my machine*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 28**
 
 port-forward
 
@@ -388,11 +272,7 @@ port-forward
 
 *All three routes through localhost:18080; 6 of 6 requests to one pod – a tunnel to one pod, no load balancing*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 29**
 
 port-forward tunnel
 
@@ -400,11 +280,7 @@ port-forward tunnel
 
 *The tunnel only exists while this command runs*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 30**
 
 NodePort inside the cluster
 
@@ -412,11 +288,7 @@ NodePort inside the cluster
 
 *usms-results-np 80:30080; through the node IP 172.17.0.3 both results pods answered (3/3)*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 31**
 
 NodePort from the laptop
 
@@ -424,11 +296,7 @@ NodePort from the laptop
 
 *Host port 30080 belongs to my DSO202 kind cluster (nginx 404); the Floci k3s container publishes only 6443 -> 6500*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 32**
 
 NodePort fallback
 
@@ -436,11 +304,7 @@ NodePort fallback
 
 *port-forward on 30081 returns the results JSON*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 33**
 
 LoadBalancer
 
@@ -448,11 +312,7 @@ LoadBalancer
 
 *usms-gateway LoadBalancer: <pending> -> EXTERNAL-IP 172.17.0.3*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 34**
 
 The ladder on one line
 
@@ -460,11 +320,7 @@ The ladder on one line
 
 *Fulfilled by k3s ServiceLB (svclb pod); 8081/8082 not published; type=LoadBalancer clusterIP=10.100.75.58 nodePort=30192 external=172.17.0.3*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 35**
 
 Ingress
 
@@ -472,11 +328,7 @@ Ingress
 
 *No IngressClass and no controller; usms-portal-ingress stored with CLASS <none> and no ADDRESS*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 36**
 
 What the Ingress resolved
 
@@ -484,11 +336,7 @@ What the Ingress resolved
 
 *Each path already resolved to pod endpoints; nothing implements it on this build*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 37**
 
 ECS and EKS side by side
 
@@ -496,11 +344,7 @@ ECS and EKS side by side
 
 *ECS: desired 2 running 2, loadBalancers now retained; application-autoscaling answers (null). EKS: Deployments, HPA, Services, Ingress, PDBs*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 38**
 
 Before the restart
 
@@ -508,11 +352,7 @@ Before the restart
 
 *HPA, PDBs, Services, Ingress recorded; k3s container restarted*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 39**
 
 After the restart
 
@@ -520,11 +360,7 @@ After the restart
 
 *PERSISTENCE PROVEN – identical, including the pinned NodePort 30080 and the allocated 30192*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 40**
 
 Node group re-read
 
@@ -532,11 +368,7 @@ Node group re-read
 
 *The "Path B" line was only unset variables; re-read, the node group is still 2/4/2*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 41**
 
 configs/lab-08.env
 
@@ -544,19 +376,13 @@ configs/lab-08.env
 
 *19 exports; hpa 2..8 at 50 %, 300 s; NodePort 30080; gateway LoadBalancer; node group 2/4/2; Ingress class empty (expected)*
 
-*Image Source: N/A*
-
 ---
-
-**Screenshot 42**
 
 Verify and commit
 
 ![Step 20](LAB_08(image)/20.png)
 
 *verify-lab-08.sh PASS=33 FAIL=1 (only "node group maxSize raised to 6" – the Known Issue); committed with nothing from outputs/*
-
-*Image Source: N/A*
 
 ---
 
