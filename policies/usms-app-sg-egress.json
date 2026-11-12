@@ -1,0 +1,38 @@
+[
+  {
+    "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443,
+    "PrefixListIds": [
+      { "PrefixListId": "pl-63a5400a", "Description": "S3 via the Lab 02 gateway endpoint - transcripts (Lab 10)" }
+    ]
+  },
+  {
+    "IpProtocol": "tcp", "FromPort": 443, "ToPort": 443,
+    "IpRanges": [
+      { "CidrIp": "0.0.0.0/0", "Description": "HTTPS to AWS service endpoints, including STS for the instance profile credentials" }
+    ]
+  },
+  {
+    "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80,
+    "UserIdGroupPairs": [
+      { "GroupId": "sg-6689be1a157212ef1", "Description": "the enrolment API - through the load balancer since Lab 05" }
+    ]
+  },
+  {
+    "IpProtocol": "tcp", "FromPort": 5432, "ToPort": 5432,
+    "UserIdGroupPairs": [
+      { "GroupId": "sg-2c8a6f333596010b8", "Description": "PostgreSQL to the data tier only" }
+    ]
+  },
+  {
+    "IpProtocol": "udp", "FromPort": 53, "ToPort": 53,
+    "IpRanges": [
+      { "CidrIp": "10.0.0.2/32", "Description": "DNS to the Amazon VPC resolver (VPC base + 2) - UDP for normal queries" }
+    ]
+  },
+  {
+    "IpProtocol": "tcp", "FromPort": 53, "ToPort": 53,
+    "IpRanges": [
+      { "CidrIp": "10.0.0.2/32", "Description": "DNS to the Amazon VPC resolver - TCP fallback for large answers" }
+    ]
+  }
+]

@@ -16,13 +16,15 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/course.env" 2>/dev/null || true
 
 INVENTORY="${1:-outputs/lab-09-identity-inventory.json}"
+# Exercise 2: decisions, not suppressions - every entry carries a reason and is committed.
+ACCEPTED_FILE="${USMS_IAM_ACCEPTED_FILE:-policies/usms-iam-accepted-findings.json}"
 
 if [ ! -f "$INVENTORY" ]; then
   echo "no inventory at $INVENTORY - run Lab 09 Step 4 part 2 first" >&2
   exit 2
 fi
 
-python3 - "$INVENTORY" << 'PY'
+python3 - "$INVENTORY" "$ACCEPTED_FILE" << 'PY'
 import json, sys
 
 MUTATING = ("Create", "Delete", "Put", "Update", "Modify", "Attach", "Detach",
@@ -50,7 +52,16 @@ def is_mutating(action):
     return any(verb.startswith(p) for p in MUTATING)
 
 roles = json.load(open(sys.argv[1]))
-high = med = 0
+import os
+accepted = []
+if len(sys.argv) > 2 and os.path.exists(sys.argv[2]):
+    accepted = json.load(open(sys.argv[2]))
+def accepted_reason(role, text):
+    for a in accepted:
+        if a.get("role") == role and a.get("match", "") in text and a.get("reason"):
+            return a["reason"]
+    return None
+high = med = acc = 0
 lines = []
 
 for r in roles:
@@ -113,6 +124,12 @@ for r in roles:
             if (sev, text) in seen:
                 continue
             seen.add((sev, text))
+            why = accepted_reason(name, text) if sev == "HIGH" else None
+            if why:
+                lines.append(f"    ACCEPTED {text}")
+                lines.append(f"             reason: {why}")
+                acc += 1
+                continue
             lines.append(f"    {sev:<4} {text}")
             if sev == "HIGH":
                 high += 1
@@ -123,6 +140,6 @@ for r in roles:
 print("== USMS IAM audit ==")
 print()
 print("\n".join(lines))
-print(f"HIGH={high}  MED={med}  roles={len(roles)}")
+print(f"HIGH={high}  MED={med}  ACCEPTED={acc}  roles={len(roles)}")
 sys.exit(1 if high else 0)
 PY
