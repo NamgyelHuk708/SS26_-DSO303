@@ -103,3 +103,5 @@ debug the autoscaler second by second (kubectl describe hpa, the 300 s hold, "Al
 one Ingress could put every service behind one ALB by path, and the manifests are portable to any cluster.
 A PDB stopped a drain from taking the last pod - ECS has no equivalent I could test. If USMS grew to many
 services, or needed to leave AWS, those advantages would outweigh the extra moving parts.
+
+
