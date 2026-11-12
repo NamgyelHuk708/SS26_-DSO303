@@ -1,0 +1,1356 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-11-12T18:00:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 09 - security review",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS Region \u00b7 us-east-1 (Floci 2.4.0, account 000000000000)",
+          "boundaryType": "region",
+          "width": 2330,
+          "height": 1420
+        },
+        "style": {
+          "width": 2330,
+          "height": 1420
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-iam",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 60
+        },
+        "data": {
+          "label": "IAM - the other axis (who may call what)",
+          "boundaryType": "auth",
+          "width": 380,
+          "height": 1000
+        },
+        "style": {
+          "width": 380,
+          "height": 1000
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "role-task",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 110
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-ecs-task-role \u00b7 USMSStudentDataReadWrite (unchanged)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "trust": "ecs-tasks.amazonaws.com + aws:SourceAccount 000000000000 + aws:SourceArn arn:aws:ecs:us-east-1:000000000000:* (Step 7: SAME PRINCIPAL, NEW CONDITION)"
+          },
+          "notes": "Permissions unchanged - Lab 10 depends on them."
+        }
+      },
+      {
+        "id": "role-reader",
+        "type": "serviceNode",
+        "position": {
+          "x": 230,
+          "y": 110
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-transcripts-reader-role \u00b7 USMSStudentDataReadOnly",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "policy": "Allow s3:ListBucket + s3:GetObject; explicit Deny Put/Delete/DeleteBucket/PutBucketPolicy",
+            "trust": "same scoped ecs-tasks trust"
+          }
+        }
+      },
+      {
+        "id": "role-ec2",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 290
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-ec2-app-role (via usms-ec2-app-profile)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "trust": "ec2.amazonaws.com, no Condition - ACCEPTED (EC2 sends no aws:SourceArn); compensated by IMDSv2 + hop limit 1 and the PassRole Deny to EC2"
+          }
+        }
+      },
+      {
+        "id": "role-deploy",
+        "type": "serviceNode",
+        "position": {
+          "x": 230,
+          "y": 290
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-deploy-role \u00b7 USMSDeployBase + boundary",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "trust": "user/usms-admin-01",
+            "passRole": "3 named roles, iam:PassedToService ecs-tasks only; explicit Deny passing anything to ec2",
+            "boundary": "USMSPermissionsBoundary - a ceiling, grants nothing, attached to NOTHING as a policy"
+          }
+        }
+      },
+      {
+        "id": "role-bg",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 470
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-breakglass-role (Ex 2)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "trust": "user/usms-admin-01 AND aws:MultiFactorAuthPresent AND sts:ExternalId (one Condition block = AND)",
+            "max": "3600 s",
+            "policy": "RegisterScalableTarget + DescribeScalableTargets only",
+            "boundary": "USMSPermissionsBoundary"
+          }
+        }
+      },
+      {
+        "id": "user-admin",
+        "type": "serviceNode",
+        "position": {
+          "x": 230,
+          "y": 470
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "usms-admin-01 (deploys as usms-deploy-role)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "user-dev",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 650
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "usms-dev-01 \u00b7 ONE key, rotated in Step 10",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "notes": "create -> move profile -> deactivate -> delete; old key AKIA...CANEA gone."
+        }
+      },
+      {
+        "id": "role-dev",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 840
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-developer-role \u00b7 session policy test (Step 9)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false,
+          "customConfig": {
+            "trust": "user/usms-dev-01",
+            "identity": "USMSDeveloperBase v3 (Deny on iam:CreateUser etc.)",
+            "step9": "session policy narrowed it; s3:GetObject NOT in the identity policy -> denied; simulator agreed (iam:CreateUser explicitDeny)"
+          }
+        }
+      },
+      {
+        "id": "node-s3",
+        "type": "serviceNode",
+        "position": {
+          "x": 230,
+          "y": 650
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-student-data (created in Lab 10) + bucket policy DRAFT (Ex 5)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "draft": "Allow 4 principals their existing actions; Deny aws:SecureTransport false (Principal *); Deny NotPrincipal [4 roles + root]",
+            "policiesNamingIt": "USMSStudentDataReadWrite (3 roles), USMSStudentDataReadOnly (reader), USMSReportingReadOnly (attached to nothing)"
+          }
+        }
+      },
+      {
+        "id": "box-vpc",
+        "type": "boundaryNode",
+        "position": {
+          "x": 430,
+          "y": 60
+        },
+        "data": {
+          "label": "usms-vpc \u00b7 10.0.0.0/16 \u00b7 resolver 10.0.0.2",
+          "boundaryType": "vpc",
+          "width": 1480,
+          "height": 1250,
+          "cidr": "10.0.0.0/16"
+        },
+        "style": {
+          "width": 1480,
+          "height": 1250
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -2
+      },
+      {
+        "id": "box-az-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 450,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1a",
+          "boundaryType": "az",
+          "width": 710,
+          "height": 1190
+        },
+        "style": {
+          "width": 710,
+          "height": 1190
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-az-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1180,
+          "y": 100
+        },
+        "data": {
+          "label": "Availability Zone \u00b7 us-east-1b",
+          "boundaryType": "az",
+          "width": 710,
+          "height": 1190
+        },
+        "style": {
+          "width": 710,
+          "height": 1190
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-pub-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 470,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-a \u00b7 Lab: 10.0.1.0/24",
+          "boundaryType": "public_subnet",
+          "width": 670,
+          "height": 400,
+          "cidr": "10.0.1.0/24"
+        },
+        "style": {
+          "width": 670,
+          "height": 400
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-pub-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1200,
+          "y": 140
+        },
+        "data": {
+          "label": "usms-public-subnet-b \u00b7 Lab: 10.0.2.0/24",
+          "boundaryType": "public_subnet",
+          "width": 670,
+          "height": 400,
+          "cidr": "10.0.2.0/24"
+        },
+        "style": {
+          "width": 670,
+          "height": 400
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-a",
+        "type": "boundaryNode",
+        "position": {
+          "x": 470,
+          "y": 580
+        },
+        "data": {
+          "label": "usms-private-subnet-a \u00b7 Lab: 10.0.3.0/24 \u00b7 usms-private-nacl",
+          "boundaryType": "private_subnet",
+          "width": 670,
+          "height": 690,
+          "cidr": "10.0.3.0/24"
+        },
+        "style": {
+          "width": 670,
+          "height": 690
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-priv-b",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1200,
+          "y": 580
+        },
+        "data": {
+          "label": "usms-private-subnet-b \u00b7 Lab: 10.0.4.0/24 \u00b7 usms-private-nacl",
+          "boundaryType": "private_subnet",
+          "width": 670,
+          "height": 690,
+          "cidr": "10.0.4.0/24"
+        },
+        "style": {
+          "width": 670,
+          "height": 690
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "node-igw",
+        "type": "serviceNode",
+        "position": {
+          "x": 1130,
+          "y": 15
+        },
+        "data": {
+          "serviceId": "internet_gateway",
+          "label": "usms-igw",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true
+        }
+      },
+      {
+        "id": "node-students",
+        "type": "serviceNode",
+        "position": {
+          "x": 2060,
+          "y": 40
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Students (internet)",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "node-nat",
+        "type": "serviceNode",
+        "position": {
+          "x": 520,
+          "y": 230
+        },
+        "data": {
+          "serviceId": "nat_gateway",
+          "label": "usms-nat",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": false
+        }
+      },
+      {
+        "id": "node-web",
+        "type": "serviceNode",
+        "position": {
+          "x": 870,
+          "y": 230
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-web-01 \u00b7 IMDSv2 required, hop 1",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-app"
+          ],
+          "customConfig": {
+            "imds": "HttpTokens required, HopLimit 1, endpoint enabled (Step 11)",
+            "profile": "usms-ec2-app-profile",
+            "onFloci": "stopped - Floci 2.4.0 cannot restart Lab 03's containers (404 No such container)"
+          },
+          "notes": "The second internet-facing entry point (Exercise 4): 80/443 from 0.0.0.0/0."
+        }
+      },
+      {
+        "id": "node-alb",
+        "type": "serviceNode",
+        "position": {
+          "x": 1500,
+          "y": 230
+        },
+        "data": {
+          "serviceId": "alb",
+          "label": "usms-enrolment-alb \u00b7 HTTP:80",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "public",
+          "replicas": 1,
+          "multiAz": true,
+          "securityGroupIds": [
+            "sg-alb"
+          ],
+          "notes": "Egress written in Step 14: tcp/80 to usms-enrolment-sg ONLY."
+        }
+      },
+      {
+        "id": "node-enrol",
+        "type": "serviceNode",
+        "position": {
+          "x": 1500,
+          "y": 700
+        },
+        "data": {
+          "serviceId": "fargate",
+          "label": "usms-enrolment-svc \u00b7 Fargate tasks 2..10",
+          "category": "Containers",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "private",
+          "replicas": 2,
+          "multiAz": true,
+          "securityGroupIds": [
+            "sg-enrol"
+          ],
+          "customConfig": {
+            "taskRole": "usms-ecs-task-role",
+            "egress": "tcp/443 -> pl-63a5400a (S3) and tcp/443 -> 0.0.0.0/0 (image pull, logs) - Step 13"
+          }
+        }
+      },
+      {
+        "id": "node-db",
+        "type": "serviceNode",
+        "position": {
+          "x": 870,
+          "y": 780
+        },
+        "data": {
+          "serviceId": "ec2",
+          "label": "usms-db-01 \u00b7 PostgreSQL \u00b7 no public IP, IMDS disabled",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "AZ-A",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": false,
+          "securityGroupIds": [
+            "sg-db"
+          ],
+          "customConfig": {
+            "negativeProof": "1 no public IP \u00b7 2 subnet does not auto-assign \u00b7 3 0.0.0.0/0 -> nat, no igw \u00b7 4 usms-db-sg admits ONE group \u00b7 5 custom NACL",
+            "finding": "usms-db-02 and a duplicate usms-db-01 (Lab 03 leftovers) also wear usms-db-sg"
+          }
+        }
+      },
+      {
+        "id": "node-s3ep",
+        "type": "serviceNode",
+        "position": {
+          "x": 1180,
+          "y": 1020
+        },
+        "data": {
+          "serviceId": "s3_gateway_endpoint",
+          "label": "usms-s3-endpoint \u00b7 pl-63a5400a",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Multi-AZ",
+          "subnet": "private",
+          "replicas": 1,
+          "multiAz": true
+        }
+      },
+      {
+        "id": "sg-alb",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1950,
+          "y": 180
+        },
+        "data": {
+          "label": "usms-alb-sg \u00b7 in 80,443 world \u00b7 out 80 -> enrolment-sg",
+          "boundaryType": "security_group",
+          "width": 350,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "internet-facing - accepted (Lab 05)"
+              },
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-enrol"
+                },
+                "description": "the ONLY thing the load balancer may initiate (Step 14)"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 350,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-enrol",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1950,
+          "y": 265
+        },
+        "data": {
+          "label": "usms-enrolment-sg \u00b7 in 80 <- alb-sg \u00b7 out 443 only",
+          "boundaryType": "security_group",
+          "width": 350,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-alb"
+                },
+                "description": "HTTP from the load balancer only (restored in Lab 09)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS: image pull, awslogs, S3 via pl-63a5400a (Step 13)"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 350,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-app",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1950,
+          "y": 350
+        },
+        "data": {
+          "label": "usms-app-sg \u00b7 in 80,443 world, 22 <- bastion \u00b7 out written (Ex 1)",
+          "boundaryType": "security_group",
+          "width": 350,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTP - open finding (Ex 4)"
+              },
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "22",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-bastion"
+                },
+                "description": "SSH from the jump host tier only (Step 16)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS: STS + S3 prefix list"
+              },
+              {
+                "protocol": "HTTP",
+                "portRange": "80",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-alb"
+                },
+                "description": "enrolment API via the load balancer"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "5432",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-db"
+                },
+                "description": "PostgreSQL to the data tier"
+              },
+              {
+                "protocol": "UDP",
+                "portRange": "53",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.2/32"
+                },
+                "description": "DNS (UDP)"
+              },
+              {
+                "protocol": "TCP",
+                "portRange": "53",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "10.0.0.2/32"
+                },
+                "description": "DNS (TCP fallback)"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 350,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-db",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1950,
+          "y": 435
+        },
+        "data": {
+          "label": "usms-db-sg \u00b7 in 5432 <- app-sg \u00b7 out 443 only",
+          "boundaryType": "security_group",
+          "width": 350,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "TCP",
+                "portRange": "5432",
+                "source": {
+                  "type": "securityGroup",
+                  "securityGroupId": "sg-app"
+                },
+                "description": "PostgreSQL from the app tier only (restored in Lab 09)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "HTTPS",
+                "portRange": "443",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "HTTPS for OS updates via usms-nat (Step 15)"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 350,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "sg-bastion",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1950,
+          "y": 520
+        },
+        "data": {
+          "label": "usms-bastion-sg \u00b7 in 22 <- 203.0.113.10/32 (no instance)",
+          "boundaryType": "security_group",
+          "width": 350,
+          "height": 70,
+          "securityGroupRules": {
+            "inbound": [
+              {
+                "protocol": "TCP",
+                "portRange": "22",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "203.0.113.10/32"
+                },
+                "description": "admin address (documentation range)"
+              }
+            ],
+            "outbound": [
+              {
+                "protocol": "ALL",
+                "portRange": "ALL",
+                "source": {
+                  "type": "cidr",
+                  "cidr": "0.0.0.0/0"
+                },
+                "description": "default allow-all (not yet written)"
+              }
+            ]
+          }
+        },
+        "style": {
+          "width": 350,
+          "height": 70
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 1
+      },
+      {
+        "id": "legend",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 1440
+        },
+        "data": {
+          "label": "Legend - Lab 09: two axes, written egress, and what this build showed",
+          "boundaryType": "auth",
+          "width": 2330,
+          "height": 300
+        },
+        "style": {
+          "width": 2330,
+          "height": 300
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "leg-l0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1480
+        },
+        "data": {
+          "label": "1-5  Students -> IGW -> ALB -> enrolment tasks -> S3 (gateway endpoint)   6-8  the web tier's own front door, its DB and OS updates",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1528
+        },
+        "data": {
+          "label": "Network axis: security groups decide what may connect (a hang = network); every egress rule on alb/enrolment/db/app is WRITTEN",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1576
+        },
+        "data": {
+          "label": "Identity axis: IAM decides what may be called (an error naming an action = IAM); a request needs a YES from BOTH axes",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1624
+        },
+        "data": {
+          "label": "Group-referenced rules: Floci 2.0.1 lost them, 2.4.0 stores them - two were restored in Lab 09 after Step 18",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l4",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1672
+        },
+        "data": {
+          "label": "Grey (/18) ranges = simulator's own split; real lab CIDRs are in the subnet titles",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1170,
+          "y": 1480
+        },
+        "data": {
+          "label": "Confused deputy: ecs-task, ecs-exec, lambda now conditioned; 5 findings ACCEPTED with written reasons (Ex 2)",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1170,
+          "y": 1528
+        },
+        "data": {
+          "label": "PassRole scoped to 3 roles + Deny to EC2; USMSPermissionsBoundary caps usms-deploy-role and is attached to nothing",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1170,
+          "y": 1576
+        },
+        "data": {
+          "label": "IMDSv2 required on web-01; IMDS disabled on db-01 (no role); usms-dev-01 key rotated with no outage",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1170,
+          "y": 1624
+        },
+        "data": {
+          "label": "Floci enforces none of this: every proof is a readback of documents and rules (verify-lab-09 PASS=50)",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r4",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1170,
+          "y": 1672
+        },
+        "data": {
+          "label": "Lab check bugs found: IpProtocol `-1` vs \"-1\", missing SecurityGroups[0], nested quotes, IAM-variable false positive",
+          "boundaryType": "auth",
+          "width": 1140,
+          "height": 42
+        },
+        "style": {
+          "width": 1140,
+          "height": 42
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node-students",
+        "target": "node-igw",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "students -> portal"
+        }
+      },
+      {
+        "id": "e2",
+        "source": "node-igw",
+        "target": "node-alb",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "internet-facing ALB"
+        }
+      },
+      {
+        "id": "e3",
+        "source": "node-alb",
+        "target": "node-enrol",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "alb-sg egress -> enrolment-sg"
+        }
+      },
+      {
+        "id": "e4",
+        "source": "node-enrol",
+        "target": "node-s3ep",
+        "sourceHandle": "bottom",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "443 -> pl-63a5400a"
+        }
+      },
+      {
+        "id": "e5",
+        "source": "node-s3ep",
+        "target": "node-s3",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "gateway endpoint"
+        }
+      },
+      {
+        "id": "e6",
+        "source": "node-igw",
+        "target": "node-web",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTP",
+          "stepNumber": 6,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "2nd front door: 80/443 -> web (Ex 4)"
+        }
+      },
+      {
+        "id": "e7",
+        "source": "node-web",
+        "target": "node-db",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "TCP",
+          "stepNumber": 7,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "5432: app-sg -> db-sg"
+        }
+      },
+      {
+        "id": "e8",
+        "source": "node-db",
+        "target": "node-nat",
+        "sourceHandle": "left",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "443 out for OS updates"
+        }
+      },
+      {
+        "id": "e9",
+        "source": "node-enrol",
+        "target": "role-task",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 9,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "task role (scoped trust)"
+        }
+      },
+      {
+        "id": "e10",
+        "source": "node-web",
+        "target": "role-ec2",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 10,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "instance profile via IMDSv2"
+        }
+      },
+      {
+        "id": "e11",
+        "source": "user-admin",
+        "target": "role-deploy",
+        "sourceHandle": "top",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 11,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "sts:AssumeRole"
+        }
+      },
+      {
+        "id": "e12",
+        "source": "role-task",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 12,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "read/write"
+        }
+      },
+      {
+        "id": "e14",
+        "source": "user-dev",
+        "target": "role-dev",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 14,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "AssumeRole + session policy"
+        }
+      },
+      {
+        "id": "e13",
+        "source": "role-reader",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 13,
+          "interactionType": "synchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "read only"
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab09-portal",
+      "name": "Student reaches enrolment through the ALB",
+      "method": "GET",
+      "path": "/enrolment/",
+      "startNodeId": "node-students",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}
