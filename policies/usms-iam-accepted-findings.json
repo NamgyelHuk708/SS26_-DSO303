@@ -28,5 +28,10 @@
     "role": "usms-lambda-exec-role",
     "match": "edgelambda",
     "reason": "Lab 10: CloudFront's Lambda@Edge replication principal (edgelambda.amazonaws.com) is required on the execution role. The lambda.amazonaws.com statement keeps its Lab 09 aws:SourceAccount/aws:SourceArn conditions; the edge statement is accepted because the published function versions it can run are themselves controlled by IAM (lambda:PublishVersion, cloudfront:UpdateDistribution)."
+  },
+  {
+    "role": "usms-edge-exec-role",
+    "match": "edgelambda",
+    "reason": "Lab 10 Exercise 2: the dedicated Lambda@Edge role must trust edgelambda.amazonaws.com (CloudFront replication). Its only permission is CloudWatch Logs writes for usms-edge-* log groups, so even a misused edge principal can obtain nothing but log writes."
   }
 ]
