@@ -1,12 +1,32 @@
 [
-  { "role": "usms-ec2-app-role", "match": "confused deputy",
-    "reason": "EC2 does not send aws:SourceArn when an instance profile delivers credentials through the metadata service, so a SourceArn condition would deny every instance. Compensating controls: IMDSv2 required + hop limit 1 on usms-web-01 (Step 11), and USMSDeployBase denies passing any role to EC2 (Step 8)." },
-  { "role": "usms-backup-operator-role", "match": "confused deputy",
-    "reason": "Same EC2 instance-profile limitation (Lab 01 exercise role). Compensating: no instance currently uses it; PassRole to EC2 is denied for the pipeline." },
-  { "role": "usms-eks-node-role", "match": "confused deputy",
-    "reason": "EKS worker nodes are EC2 instances - same limitation. Out of scope for Lab 09 (no IRSA on this build); revisit when IRSA exists." },
-  { "role": "usms-eks-cluster-role", "match": "confused deputy",
-    "reason": "Lab 07 control-plane role; out of scope for Lab 09 by the lab's own scope statement. To fix later with aws:SourceAccount once tested against the EKS service." },
-  { "role": "wine-mlops-PredictFunctionRole-ffd3430bbaec", "match": "confused deputy",
-    "reason": "Not a USMS resource - created by another project sharing this Floci account. Owner to be found and asked to remove it; USMS will not modify it." }
+  {
+    "role": "usms-ec2-app-role",
+    "match": "confused deputy",
+    "reason": "EC2 does not send aws:SourceArn when an instance profile delivers credentials through the metadata service, so a SourceArn condition would deny every instance. Compensating controls: IMDSv2 required + hop limit 1 on usms-web-01 (Step 11), and USMSDeployBase denies passing any role to EC2 (Step 8)."
+  },
+  {
+    "role": "usms-backup-operator-role",
+    "match": "confused deputy",
+    "reason": "Same EC2 instance-profile limitation (Lab 01 exercise role). Compensating: no instance currently uses it; PassRole to EC2 is denied for the pipeline."
+  },
+  {
+    "role": "usms-eks-node-role",
+    "match": "confused deputy",
+    "reason": "EKS worker nodes are EC2 instances - same limitation. Out of scope for Lab 09 (no IRSA on this build); revisit when IRSA exists."
+  },
+  {
+    "role": "usms-eks-cluster-role",
+    "match": "confused deputy",
+    "reason": "Lab 07 control-plane role; out of scope for Lab 09 by the lab's own scope statement. To fix later with aws:SourceAccount once tested against the EKS service."
+  },
+  {
+    "role": "wine-mlops-PredictFunctionRole-ffd3430bbaec",
+    "match": "confused deputy",
+    "reason": "Not a USMS resource - created by another project sharing this Floci account. Owner to be found and asked to remove it; USMS will not modify it."
+  },
+  {
+    "role": "usms-lambda-exec-role",
+    "match": "edgelambda",
+    "reason": "Lab 10: CloudFront's Lambda@Edge replication principal (edgelambda.amazonaws.com) is required on the execution role. The lambda.amazonaws.com statement keeps its Lab 09 aws:SourceAccount/aws:SourceArn conditions; the edge statement is accepted because the published function versions it can run are themselves controlled by IAM (lambda:PublishVersion, cloudfront:UpdateDistribution)."
+  }
 ]
