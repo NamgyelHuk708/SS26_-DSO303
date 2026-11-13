@@ -1,0 +1,752 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-11-13T07:00:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 10 - edge functions",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS \u00b7 us-east-1 (Floci 2.4.0, account 000000000000) - no VPC: every Lab 10 service is managed",
+          "boundaryType": "region",
+          "width": 1900,
+          "height": 1180
+        },
+        "style": {
+          "width": 1900,
+          "height": 1180
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-edge",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 60
+        },
+        "data": {
+          "label": "CloudFront edge location \u00b7 usms-transcript-cdn (EN6YGM2ZHZHDVP) - trigger order (1) viewer-request -> cache -> (3) origin-response",
+          "boundaryType": "auth",
+          "width": 1100,
+          "height": 420
+        },
+        "style": {
+          "width": 1100,
+          "height": 420
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-regional",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 520
+        },
+        "data": {
+          "label": "Regional path (us-east-1) - nobody is waiting for this",
+          "boundaryType": "auth",
+          "width": 1100,
+          "height": 360
+        },
+        "style": {
+          "width": 1100,
+          "height": 360
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-iam",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1160,
+          "y": 60
+        },
+        "data": {
+          "label": "IAM - who the functions run as / who may call them",
+          "boundaryType": "auth",
+          "width": 720,
+          "height": 820
+        },
+        "style": {
+          "width": 720,
+          "height": 820
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "node-students",
+        "type": "serviceNode",
+        "position": {
+          "x": 50,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "user",
+          "label": "Student's browser \u00b7 GET /transcripts/2026/STU-00417.json",
+          "category": "Client / Ingress",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true
+        }
+      },
+      {
+        "id": "node-cf",
+        "type": "serviceNode",
+        "position": {
+          "x": 420,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "cloudfront",
+          "label": "usms-transcript-cdn \u00b7 en6ygm2zhzhdvp.cloudfront.net",
+          "category": "Networking & Content Delivery",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "distributionId": "EN6YGM2ZHZHDVP",
+            "status": "Deployed (Floci: instantly; real AWS: minutes)",
+            "cacheKey": "URI + x-usms-student header, no cookies, no query string",
+            "viewerProtocolPolicy": "redirect-to-https",
+            "associations": "viewer-request -> usms-edge-viewer-request:1 ; origin-response -> usms-edge-origin-response:2 (Ex 1)",
+            "onFloci": "record only - associations stored WITHOUT validation; no edge executes them"
+          }
+        }
+      },
+      {
+        "id": "fn-viewer",
+        "type": "serviceNode",
+        "position": {
+          "x": 250,
+          "y": 330
+        },
+        "data": {
+          "serviceId": "lambda",
+          "label": "usms-edge-viewer-request:1 \u00b7 viewer-request",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "runtime": "nodejs20.x",
+            "memory": "128 MB (viewer cap)",
+            "timeout": "5 s (viewer cap)",
+            "env": "none (forbidden at the edge)",
+            "logic": "lowercase the URI; no x-usms-student header -> 403 response, origin never contacted",
+            "versions": "1 (role usms-lambda-exec-role), 2 (Ex 2: usms-edge-exec-role)"
+          }
+        }
+      },
+      {
+        "id": "fn-origin",
+        "type": "serviceNode",
+        "position": {
+          "x": 620,
+          "y": 330
+        },
+        "data": {
+          "serviceId": "lambda",
+          "label": "usms-edge-origin-response:2 \u00b7 origin-response",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "runtime": "nodejs20.x",
+            "memory": "128 MB",
+            "timeout": "5 s",
+            "env": "none",
+            "logic": "adds HSTS, nosniff, X-Frame-Options, Referrer-Policy, CSP (v2) + cache-control; chain header",
+            "versions": "1 (4 headers), 2 (Ex 1: + CSP), 3 (Ex 2: dedicated role)"
+          }
+        }
+      },
+      {
+        "id": "note-sim",
+        "type": "boundaryNode",
+        "position": {
+          "x": 860,
+          "y": 300
+        },
+        "data": {
+          "label": "usms-edge-simulate.sh - runs (1) then (3) by direct invoke: allow -> 200 + x-usms-edge-chain; deny -> 403, chain of one",
+          "boundaryType": "auth",
+          "width": 250,
+          "height": 150
+        },
+        "style": {
+          "width": 250,
+          "height": 150
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "node-s3",
+        "type": "serviceNode",
+        "position": {
+          "x": 250,
+          "y": 600
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-student-data \u00b7 origin bucket (created in Lab 10)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "objects": "transcripts/evidence/lab-08-scaling-evidence.json, lab-10-edge-trace.json, ignore-me.txt; notes/ignore-me.json",
+            "notification": "usms-transcript-upload: s3:ObjectCreated:* prefix transcripts/ suffix .json -> notifier:live",
+            "bucketPolicy": "none yet - Lab 09 draft validated, applied by the S3 configuration lab",
+            "onFloci": "notification stored but NOT delivered"
+          }
+        }
+      },
+      {
+        "id": "fn-notifier",
+        "type": "serviceNode",
+        "position": {
+          "x": 620,
+          "y": 600
+        },
+        "data": {
+          "serviceId": "lambda",
+          "label": "usms-transcript-notifier:live -> 1 \u00b7 python3.12",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "memory": "256 MB",
+            "timeout": "30 s",
+            "env": "USMS_BUCKET, USMS_NOTIFY_CHANNEL (legal here)",
+            "alias": "live -> 1 (rolled to 2 and back)",
+            "resourcePolicy": "s3.amazonaws.com, AWS:SourceArn usms-student-data, AWS:SourceAccount 000000000000",
+            "evidence": "direct invoke processed=1; USMS_NOTIFY lines in Floci's container log"
+          }
+        }
+      },
+      {
+        "id": "node-logs",
+        "type": "serviceNode",
+        "position": {
+          "x": 900,
+          "y": 600
+        },
+        "data": {
+          "serviceId": "cloudwatch",
+          "label": "CloudWatch Logs \u00b7 /aws/lambda/*",
+          "category": "Management & Governance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "Floci: log groups created but empty - stdout goes to the Floci container log instead."
+        }
+      },
+      {
+        "id": "role-exec",
+        "type": "serviceNode",
+        "position": {
+          "x": 1200,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-lambda-exec-role \u00b7 USMSLambdaBasic",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "trust": "lambda.amazonaws.com (+ Lab 09 aws:SourceAccount/SourceArn) and edgelambda.amazonaws.com (accepted finding)",
+            "permissions": "logs:* on /aws/lambda/*, s3:GetObject"
+          }
+        }
+      },
+      {
+        "id": "role-edge",
+        "type": "serviceNode",
+        "position": {
+          "x": 1520,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-edge-exec-role \u00b7 USMSEdgeBasic (Ex 2)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "permissions": "logs only, /aws/lambda/usms-edge-* and /aws/lambda/us-east-1.usms-edge-* in any region",
+            "s3": "none"
+          }
+        }
+      },
+      {
+        "id": "role-rw",
+        "type": "serviceNode",
+        "position": {
+          "x": 1200,
+          "y": 430
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "USMSStudentDataReadWrite -> 3 roles (now real)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "notes": "ec2-app, ecs-task, eks-node: the bucket they always named now exists."
+        }
+      },
+      {
+        "id": "role-ro",
+        "type": "serviceNode",
+        "position": {
+          "x": 1520,
+          "y": 430
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "USMSStudentDataReadOnly -> transcripts-reader (Lab 09)",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true
+        }
+      },
+      {
+        "id": "legend",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 1200
+        },
+        "data": {
+          "label": "Legend - Lab 10 edge functions",
+          "boundaryType": "auth",
+          "width": 1900,
+          "height": 260
+        },
+        "style": {
+          "width": 1900,
+          "height": 260
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "leg-l0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1240
+        },
+        "data": {
+          "label": "1-2  Student -> CloudFront -> (cache miss) usms-student-data          3-4  edge functions at their trigger points",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1290
+        },
+        "data": {
+          "label": "5-6  upload -> regional notifier -> logs (Floci: notification stored, not delivered; logs go to the Floci container log)",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1340
+        },
+        "data": {
+          "label": "7-10  who each function runs as, and the three policies that now name a real bucket",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1390
+        },
+        "data": {
+          "label": "Edge rules (checked statically - CloudFront validates them, not Lambda): version-qualified ARN, no env vars, 128 MB/5 s viewer",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1240
+        },
+        "data": {
+          "label": "A published version freezes code AND configuration: v1 keeps its 4 headers and its old role",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1290
+        },
+        "data": {
+          "label": "Aliases are for regional triggers (live), never for the edge - the pointer moves",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1340
+        },
+        "data": {
+          "label": "Resource policy (who may invoke) is scoped by source ARN + account - Lab 09's confused-deputy idea",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1390
+        },
+        "data": {
+          "label": "Floci: distribution stored and Deployed instantly, no edge execution - usms-edge-simulate.sh proves composition",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node-students",
+        "target": "node-cf",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "GET transcript"
+        }
+      },
+      {
+        "id": "e2",
+        "source": "node-cf",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "cache miss -> origin"
+        }
+      },
+      {
+        "id": "e3",
+        "source": "node-cf",
+        "target": "fn-viewer",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Event",
+          "stepNumber": 3,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "(1) viewer-request"
+        }
+      },
+      {
+        "id": "e4",
+        "source": "node-cf",
+        "target": "fn-origin",
+        "sourceHandle": "bottom-right",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Event",
+          "stepNumber": 4,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "(3) origin-response"
+        }
+      },
+      {
+        "id": "e5",
+        "source": "node-s3",
+        "target": "fn-notifier",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "Event",
+          "stepNumber": 5,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "ObjectCreated transcripts/*.json"
+        }
+      },
+      {
+        "id": "e6",
+        "source": "fn-notifier",
+        "target": "node-logs",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 6,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "USMS_NOTIFY"
+        }
+      },
+      {
+        "id": "e7",
+        "source": "fn-notifier",
+        "target": "role-exec",
+        "sourceHandle": "top",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 7,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "execution role"
+        }
+      },
+      {
+        "id": "e8",
+        "source": "fn-viewer",
+        "target": "role-edge",
+        "sourceHandle": "right",
+        "targetHandle": "bottom",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "v2+: usms-edge-exec-role"
+        }
+      },
+      {
+        "id": "e9",
+        "source": "role-rw",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 9,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "Get/Put/Delete"
+        }
+      },
+      {
+        "id": "e10",
+        "source": "role-ro",
+        "target": "node-s3",
+        "sourceHandle": "bottom",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "Object access",
+          "stepNumber": 10,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "Get/List only"
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab10-transcript",
+      "name": "Student fetches a transcript through CloudFront",
+      "method": "GET",
+      "path": "/transcripts/2026/stu-00417.json",
+      "startNodeId": "node-students",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}
