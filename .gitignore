@@ -26,3 +26,4 @@ Thumbs.db
 .idea/
 __pycache__/
 labs/lab-11-cicd/app/dist/
+labs/lab-11-cicd/app-results/dist/

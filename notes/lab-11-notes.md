@@ -50,3 +50,9 @@ Broken source (container "enrolment-api-v2"): pipeline execution d51441d9 -> Sou
 buildspec: pre_build -> "config/service.json names the wrong container" -> exit 1. On real AWS the pipeline is the
 safety net (Build fails in PRE_BUILD, nothing deploys); on Floci 2.4.0 the only check that caught it was the local
 runner - "validate locally, then push". Fixed, validated locally, uploaded (5 source versions), executed.
+
+## Exercise 4 - EventBridge trigger: how far the event got on Floci 2.4.0
+Bucket EventBridgeConfiguration stored; rule usms-enrolment-source-changed (one key) and target stored; uploading
+a new source version made EventBridge deliver and MATCH the event (EventBridgeInvoker ran 30 s after the upload),
+but the invoker logged "unsupported target ARN type: arn:aws:codepipeline:...". Executions before=4 after=4.
+Observed: S3 -> EventBridge delivery and one-key matching. Not available: a CodePipeline target.

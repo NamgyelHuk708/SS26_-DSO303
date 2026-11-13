@@ -19,10 +19,7 @@ phases:
       - test -f VERSION || { echo "VERSION file is missing"; exit 1; }
       - python3 -m json.tool config/service.json > /dev/null
       - |
-        grep -q '"container": "enrolment-api"' config/service.json || {
-          echo "config/service.json names the wrong container"
-          exit 1
-        }
+        python3 -c "import json,sys; c=json.load(open('config/service.json')).get('container'); sys.exit(0) if c == 'enrolment-api' else sys.exit('container mismatch: expected enrolment-api, found %s in config/service.json' % c)"
       - |
         grep -qE '"port": 80([^0-9]|$)' config/service.json || {
           echo "config/service.json must say \"port\": 80 - the ALB target group and the task definition both listen on 80. Fix the port in config/service.json and upload the source again."
@@ -52,13 +49,25 @@ phases:
         }
         META
       - cp config/service.json "$ARTIFACT_DIR/service.json"
+      - |
+        export IMAGE_URI="${IMAGE_URI:-public.ecr.aws/nginx/nginx:stable-alpine}"
+        python3 -c "import json,os; c=json.load(open('config/service.json'))['container']; json.dump([{'name': c, 'imageUri': os.environ['IMAGE_URI']}], open('$ARTIFACT_DIR/imagedefinitions.json', 'w'))"
+        cat "$ARTIFACT_DIR/imagedefinitions.json"; echo
 
   post_build:
     commands:
       - echo "--- post_build ---"
-      - bash tests/smoke.sh
+      - rm -f /tmp/usms-smoke-status
+      - SMOKE=0; bash tests/smoke.sh || SMOKE=$?; echo "$SMOKE" > /tmp/usms-smoke-status; exit "$SMOKE"
       - ls -l "$ARTIFACT_DIR"
       - cat "$ARTIFACT_DIR/build-metadata.json"
+    finally:
+      - |
+        STATUS=$(cat /tmp/usms-smoke-status 2>/dev/null || echo "not-run")
+        RESULT=$([ "$STATUS" = "0" ] && echo passed || echo FAILED)
+        mkdir -p "$ARTIFACT_DIR"
+        echo "release=$(tr -d '[:space:]' < VERSION) tests=$RESULT exit=$STATUS at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$ARTIFACT_DIR/build-summary.txt"
+        cat "$ARTIFACT_DIR/build-summary.txt"
 
 artifacts:
   base-directory: dist
