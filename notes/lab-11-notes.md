@@ -1,58 +1,88 @@
-# Lab 11 notes
+## Exercises - short record
+- Ex 1: usms-results-build (S3 source, SAME usms-codebuild-role, python:3.12-slim). Local build: results r1. Floci build
+  SUCCEEDED with no artifact (same gap), batch-get-builds role null. USMSCodeBuildBase covers the bucket but its log
+  statement names only /aws/codebuild/usms-enrolment-build -> would need policy v2 on real AWS.
+- Ex 2: finally in post_build writes dist/build-summary.txt. First version reported "tests=passed" for a failed build:
+  under errexit the status was never written and finally read a stale 0 from the previous run. Fixed with
+  "SMOKE=0; bash tests/smoke.sh || SMOKE=$?" and deleting the status file first. Tested with a harness (commands with
+  set -e, then always finally) - not observed in CodeBuild.
+- Ex 3: parsed JSON container check (passes with 4-space indent; names expected and found); trust policy +
+  aws:SourceArn for both projects.
+- Ex 4: S3 -> EventBridge delivered and matched one key; target codepipeline unsupported on Floci (before=4 after=4).
+- Ex 5: imagedefinitions.json array at the artifact root, name from config/service.json, IMAGE_URI exported with the
+  nginx default; 8th smoke assertion; readiness file with "BuildOutput key: NONE".
 
-## Support path
-USMS_CICD_SUPPORT_PATH=A - Floci 2.4.0.
+## Step 15 question - iam:PassRole with Resource "*" but the condition kept
+The condition iam:PassedToService still limits WHICH SERVICE receives the role (here codebuild), but "*" removes the
+limit on WHICH ROLE. Anyone allowed to call create-project/update-project could then name the most powerful role that
+CodeBuild may assume - for example an administrator role, or usms-codepipeline-role / usms-deploy-role - and run
+arbitrary buildspec commands with its permissions. Naming the one role (usms-codebuild-role) is what stops a build
+from becoming a privilege-escalation path; the condition alone only restricts where the escalation lands.
 
-## Step 12 - Known Issue confirmed on Floci 2.4.0
-First standalone build (usms-enrolment-build:1): FAULT in about 5 s. batch-get-builds context and docker logs floci:
-"Status 404: pull access denied for aws/codebuild/standard, repository does not exist or may require
-'docker login'". aws/codebuild/standard:7.0 is published only inside AWS's CodeBuild fleet, so a local
-Docker daemon cannot pull it. FAULT (not FAILED) = CodeBuild could not run the build at all; my buildspec
-was never executed. Alternative from the course's Known Issues page (Lab 11): python:3.12-slim.
-The buildspec needs only python3, bash, sed, cp and date - all present in Debian's python:3.12-slim.
+## Nested heredocs (for the checklist)
+<< 'BUILDSPEC' (quoted) writes the text literally, so $USMS_RELEASE and ${CODEBUILD_BUILD_ID:-local} reach the file
+for CodeBuild to expand; << META (unquoted, inside it) is expanded at BUILD time; << EOF in Step 21 is expanded at
+WRITE time. Quoted writes the text, unquoted writes the result.
 
-## Step 12-13 - a SUCCEEDED build that built nothing (python:3.12-slim)
-Build usms-enrolment-build:2: status SUCCEEDED, all 11 phases SUCCEEDED in 0 s. But docker logs floci shows
-the python:3.12-slim container Started at 16:39:32.853 and Stopping at 16:39:32.992 - it lived 0.14 s, too
-short to start Python. The log stream was created and is empty, no "--- install ---" marker appears anywhere,
-and NO artifact exists under build/ (the bucket holds only the source zip). Conclusion: on Floci 2.4.0 a green
-CodeBuild status is not evidence the buildspec ran. The evidence I rely on instead: the local runner (Step 14,
-exit 0, 7/7 smoke tests, buildId "local") and - if the pipeline produces one - the artifact's contents (Step 19).
+## Review Questions
 
-## Step 8 your-turn - a bug the deliberate failure caught
-grep -q '"port": 80' PASSED with "port": 8080 - the pattern is a prefix of the wrong value. Fixed with
-grep -qE '"port": 80([^0-9]|$)'; with 8080 the local build now stops in pre_build with my message, exit 1.
-Exercise 3 replaces text matching with JSON parsing, which removes this class of bug.
+### Q1. Source and Build succeed, the deployed application is unchanged
+Explanation 1 - artifacts.base-directory: the build wrote its output to dist/ but base-directory pointed elsewhere (or
+files matched nothing), so the artifact is empty or holds the wrong files and the deploy stage has nothing new to
+deploy. One command: download the BuildOutput zip and list it (python3 -m zipfile -l, or unzip -l) - an empty or
+"dist/"-prefixed listing shows it. Explanation 2 - the source zip's layout: the zip had a top-level app/ directory,
+so the build ran against an old or default buildspec (or Floci's inline reading, as I found) and never saw the new
+source. One command: unzip -l on the SOURCE zip - every path starting with app/ shows it. (On Floci there was a third,
+emulator-specific explanation: the build never received the source at all - shown by build-metadata absence and the
+phase contexts.)
 
-## Step 17 - no automatic first execution
-create-pipeline succeeded (2 stages), but get-pipeline-state showed latestExecution None for both stages after
-20 s and no SourceOutput object was written. Real AWS starts an execution as soon as a pipeline is created;
-Floci 2.4.0 stores the pipeline without starting one. Step 19's start-pipeline-execution is the first run.
+### Q2. Why CodePipeline requires versioning on an S3 source
+An execution must record WHICH source it is building and keep using that exact source for its whole run, even if
+someone uploads a new object a second later. With versioning the Source action records the object's version id; every
+later stage of the same execution reads that version, and the execution history can say precisely which bytes produced
+which artifact. Without versioning there is only "the object at this key now", so an execution could not identify, nor
+consistently re-read, its own input.
 
-## Step 19 - why Floci's builds "succeeded" without building (diagnosed)
-Pipeline execution 067a9216: Source Succeeded, Build Succeeded, execution Succeeded on the first poll - but NO
-SourceOutput/BuildOutput objects were written and the build container lived 0.21 s. Also, start-build on a
-CODEPIPELINE-source project was ACCEPTED (build 3) - real AWS refuses it (Step 18's "cost" not observed).
-Experiment (build 6): the same build with --buildspec-override "$(cat buildspec.yml)" (the CONTENT) FAILED with
-PRE_BUILD FAILED / POST_BUILD FAILED, container 0.55 s. Conclusion: Floci 2.4.0 treats the project's
-source.buildspec value "buildspec.yml" as an INLINE buildspec (a YAML document with no phases) instead of a path
-inside the source - so every earlier "SUCCEEDED" ran nothing. A green build status was never evidence.
-Follow-up (build 6 contexts, which Floci DOES populate): PRE_BUILD "Exit code 1: VERSION file is missing";
-POST_BUILD "Exit code 127: bash: tests/smoke.sh: No such file or directory". My commands ran in the container,
-but the S3 source zip was never unpacked into it, although DOWNLOAD_SOURCE reports SUCCEEDED.
-=> Floci 2.4.0 CodeBuild: (1) source.buildspec is read as inline YAML, not a path; (2) the S3 source is not
-delivered to the container. The control plane is observed (projects, pipeline, executions, states, contexts);
-build EXECUTION is evidenced by the local runner from here on (the lab's Path B treatment for Steps 19-20).
+### Q3. iam:PassRole to someone who thinks it is redundant
+Their objection is fair: they may create the project. But creating a project and choosing which identity it runs as are
+different powers. When I name a role for a service, the service will later act WITH THAT ROLE'S PERMISSIONS, not mine.
+If naming any role were free, anyone allowed to create a build project could name an administrator role and let the
+build do what they themselves may not - a privilege escalation through a service. iam:PassRole asks the separate
+question "may you hand THIS role to THAT service?", so the permissions a person can obtain indirectly never exceed the
+roles they were explicitly allowed to pass.
 
-## Step 20 - the deliberate failure
-Broken source (container "enrolment-api-v2"): pipeline execution d51441d9 -> Source Succeeded, Build Succeeded,
-"Action completed."; build usms-enrolment-build:8 SUCCEEDED with no failed phase. The local runner on the same
-buildspec: pre_build -> "config/service.json names the wrong container" -> exit 1. On real AWS the pipeline is the
-safety net (Build fails in PRE_BUILD, nothing deploys); on Floci 2.4.0 the only check that caught it was the local
-runner - "validate locally, then push". Fixed, validated locally, uploaded (5 source versions), executed.
+### Q4. Two roles vs one
+For two roles: they separate blast radii. A compromised build (a malicious dependency in the build container) holds
+only usms-codebuild-role: its log group and the artifact bucket. It cannot start other builds, pass roles, or (in Lab 12)
+update the ECS service. A compromised pipeline configuration cannot run arbitrary commands. Each role's policy is small
+enough to review, and each trust policy names one service. Strongest argument against: the build already WRITES the
+artifacts the pipeline deploys, so a compromised build can still ship malicious code through the legitimate path - the
+separation protects the AWS account more than it protects the deployed application; and two roles, two policies and a
+PassRole statement are more to maintain, where a mistake (as Exercise 1's log statement showed) silently breaks a build.
 
-## Exercise 4 - EventBridge trigger: how far the event got on Floci 2.4.0
-Bucket EventBridgeConfiguration stored; rule usms-enrolment-source-changed (one key) and target stored; uploading
-a new source version made EventBridge deliver and MATCH the event (EventBridgeInvoker ran 30 s after the upload),
-but the invoker logged "unsupported target ARN type: arn:aws:codepipeline:...". Executions before=4 after=4.
-Observed: S3 -> EventBridge delivery and one-key matching. Not available: a CodePipeline target.
+### Q5. The three heredoc forms
+<< 'BUILDSPEC' written as << BUILDSPEC: my shell would expand $USMS_RELEASE, $ARTIFACT_DIR and
+${CODEBUILD_BUILD_ID:-local} at WRITE time - to empty strings and "local" - so the buildspec would contain blanks and
+always report a local build; YAML stays valid and nothing reports an error. << META written as << 'META': the metadata
+file would contain the literal text $USMS_RELEASE instead of r4 - still valid JSON, so json.tool passes. << EOF in Step
+21 written as << 'EOF': configs/lab-11.env would contain the command text $(aws ...) instead of values; sourcing it
+later would RUN those commands silently (or fail quietly), so values change or go empty without an error. In every case
+the result is syntactically valid, which is why no tool complains.
+
+### Q6. Removing pre_build validation because "the deploy stage checks it anyway"
+They are right when the deploy stage really checks the same thing early and cheaply, nothing irreversible happens
+before it (no image pushed, no artifact published that others consume), and builds are short. They are expensively
+wrong when the deploy check happens late: after a slow build and image push, mid-rollout (some tasks already replaced),
+or only as a failed health check after the service has started rolling - then the bad configuration costs a rollback,
+an incident, or a broken environment, instead of 90 seconds. My Step 20 showed a sharper version: on Floci the pipeline
+stayed green with a broken container name; the only check that caught it was pre_build, run locally.
+
+### Q7. Proving r4 was built from the source in the repository on a given date
+Evidence chain: (1) the git commit on that date containing labs/lab-11-cicd/app with VERSION r4; (2) the S3 source
+object's version id and LastModified for the upload of that zip (list-object-versions), and the zip's contents matching
+the commit; (3) the pipeline execution that recorded that source version id; (4) the build id that execution started;
+(5) the artifact's build-metadata.json naming release r4, that build id and CODEBUILD_RESOLVED_SOURCE_VERSION = that S3
+version. Weakest link: the step from git to S3 - the zip was packed and uploaded by hand from my working tree, so
+nothing proves the uploaded bytes equal the committed files (uncommitted changes would be included). Recording a
+checksum of the zip with the commit, or building straight from the repository, would close it. On Floci there is a
+second weak link: no CodeBuild artifact exists at all, so links 4-5 are only demonstrable with the local runner.

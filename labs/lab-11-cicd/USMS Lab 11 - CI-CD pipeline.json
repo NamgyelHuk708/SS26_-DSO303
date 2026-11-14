@@ -1,0 +1,673 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-11-13T18:30:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 11 - CI/CD pipeline",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS \u00b7 us-east-1 (Floci 2.4.0, account 000000000000) - Lab 11 CI/CD: Path A",
+          "boundaryType": "region",
+          "width": 1900,
+          "height": 1100
+        },
+        "style": {
+          "width": 1900,
+          "height": 1100
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-pipe",
+        "type": "boundaryNode",
+        "position": {
+          "x": 300,
+          "y": 60
+        },
+        "data": {
+          "label": "CodePipeline usms-enrolment-pipeline - Stage 1 Source (S3) -> Stage 2 Build (CodeBuild); every arrow between stages is a zip in S3",
+          "boundaryType": "auth",
+          "width": 1150,
+          "height": 560
+        },
+        "style": {
+          "width": 1150,
+          "height": 560
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-iam",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1480,
+          "y": 60
+        },
+        "data": {
+          "label": "IAM - two blast radii + the event role",
+          "boundaryType": "auth",
+          "width": 400,
+          "height": 980
+        },
+        "style": {
+          "width": 400,
+          "height": 980
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "box-lab12",
+        "type": "boundaryNode",
+        "position": {
+          "x": 300,
+          "y": 660
+        },
+        "data": {
+          "label": "Lab 12 adds Stage 3: Deploy -> ECS usms-enrolment-svc (imagedefinitions.json contract ready - Ex 5)",
+          "boundaryType": "auth",
+          "width": 1150,
+          "height": 380
+        },
+        "style": {
+          "width": 1150,
+          "height": 380
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "node-dev",
+        "type": "serviceNode",
+        "position": {
+          "x": 40,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "developer",
+          "label": "Me: labs/lab-11-cicd/app -> usms-pack-source.sh (buildspec.yml at the zip ROOT)",
+          "category": "Third-Party & External",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "localRunner": "usms-buildspec-run.sh: 4 phases, 8 smoke tests, buildId 'local' - the build evidence on Floci 2.4.0"
+          }
+        }
+      },
+      {
+        "id": "node-src",
+        "type": "serviceNode",
+        "position": {
+          "x": 360,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-pipeline-artifacts \u00b7 source/usms-enrolment-src.zip (versioned: r3,r4,r5,broken,fixed)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "versioning": "Enabled - proved by two versions at one key (Step 6)",
+            "publicAccess": "blocked",
+            "eventBridge": "EventBridgeConfiguration {} (Ex 4)"
+          }
+        }
+      },
+      {
+        "id": "node-cp",
+        "type": "serviceNode",
+        "position": {
+          "x": 760,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "codepipeline",
+          "label": "usms-enrolment-pipeline \u00b7 Source -> Build",
+          "category": "Developer Tools",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "role": "usms-codepipeline-role",
+            "poll": "PollForSourceChanges \"false\"",
+            "onFloci": "executions report Succeeded but write no SourceOutput/BuildOutput; no automatic first execution"
+          }
+        }
+      },
+      {
+        "id": "node-cb",
+        "type": "serviceNode",
+        "position": {
+          "x": 760,
+          "y": 380
+        },
+        "data": {
+          "serviceId": "codebuild",
+          "label": "usms-enrolment-build \u00b7 python:3.12-slim (standard:7.0 -> 404)",
+          "category": "Developer Tools",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "source": "CODEPIPELINE (after Step 18)",
+            "role": "usms-codebuild-role",
+            "buildspec": "version 0.2, install/pre_build/build/post_build + finally (Ex 2)",
+            "onFloci": "source.buildspec read as INLINE yaml and the S3 source not delivered -> SUCCEEDED builds ran nothing (diagnosed with --buildspec-override: 'VERSION file is missing')"
+          }
+        }
+      },
+      {
+        "id": "node-art",
+        "type": "serviceNode",
+        "position": {
+          "x": 1150,
+          "y": 380
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-pipeline-artifacts \u00b7 usms-enrolment-pipeline/BuildOutput/ (empty on Floci)",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "expected": "index.html, healthz.html, service.json, build-metadata.json, imagedefinitions.json at the ROOT"
+          }
+        }
+      },
+      {
+        "id": "node-eb",
+        "type": "serviceNode",
+        "position": {
+          "x": 1150,
+          "y": 130
+        },
+        "data": {
+          "serviceId": "eventbridge",
+          "label": "rule usms-enrolment-source-changed (Ex 4) \u00b7 one key",
+          "category": "Application Integration",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "pattern": "aws.s3 Object Created, bucket usms-pipeline-artifacts, key source/usms-enrolment-src.zip",
+            "onFloci": "event delivered and matched; target type codepipeline UNSUPPORTED"
+          }
+        }
+      },
+      {
+        "id": "note-ecs",
+        "type": "boundaryNode",
+        "position": {
+          "x": 340,
+          "y": 720
+        },
+        "data": {
+          "label": "Lab 12 target: ECS usms-enrolment-svc, container enrolment-api - deployed from imagedefinitions.json [{name: enrolment-api (from config/service.json), imageUri: ${IMAGE_URI:-nginx:stable-alpine}}]",
+          "boundaryType": "auth",
+          "width": 1070,
+          "height": 90
+        },
+        "style": {
+          "width": 1070,
+          "height": 90
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "note-results",
+        "type": "boundaryNode",
+        "position": {
+          "x": 340,
+          "y": 840
+        },
+        "data": {
+          "label": "Ex 1: usms-results-build - second project, S3 source, SAME usms-codebuild-role (log statement names only the enrolment log group -> would need policy v2)",
+          "boundaryType": "auth",
+          "width": 1070,
+          "height": 90
+        },
+        "style": {
+          "width": 1070,
+          "height": 90
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "note-finally",
+        "type": "boundaryNode",
+        "position": {
+          "x": 340,
+          "y": 960
+        },
+        "data": {
+          "label": "Ex 2: post_build finally writes build-summary.txt even when tests fail; Ex 3: container check parses JSON (expected vs found)",
+          "boundaryType": "auth",
+          "width": 1070,
+          "height": 60
+        },
+        "style": {
+          "width": 1070,
+          "height": 60
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "role-cp",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1500,
+          "y": 110
+        },
+        "data": {
+          "label": "usms-codepipeline-role \u00b7 USMSCodePipelineBase - artifact bucket; codebuild:StartBuild on ONE project; iam:PassRole on usms-codebuild-role ONLY, iam:PassedToService codebuild",
+          "boundaryType": "auth",
+          "width": 360,
+          "height": 200
+        },
+        "style": {
+          "width": 360,
+          "height": 200
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "role-cb",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1500,
+          "y": 340
+        },
+        "data": {
+          "label": "usms-codebuild-role \u00b7 USMSCodeBuildBase - its own log group; the artifact bucket; explicit DENY on usms-student-data. Trust: codebuild + aws:SourceAccount + aws:SourceArn [2 projects] (Ex 3)",
+          "boundaryType": "auth",
+          "width": 360,
+          "height": 220
+        },
+        "style": {
+          "width": 360,
+          "height": 220
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "role-ev",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1500,
+          "y": 590
+        },
+        "data": {
+          "label": "usms-events-pipeline-role \u00b7 USMSEventsStartPipeline (Ex 4) - codepipeline:StartPipelineExecution on one pipeline; trust events.amazonaws.com, SourceArn = the one rule",
+          "boundaryType": "auth",
+          "width": 360,
+          "height": 200
+        },
+        "style": {
+          "width": 360,
+          "height": 200
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "role-note",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1500,
+          "y": 820
+        },
+        "data": {
+          "label": "IAM is stored, not enforced, on Floci - every scope here was judged by reading the documents",
+          "boundaryType": "auth",
+          "width": 360,
+          "height": 120
+        },
+        "style": {
+          "width": 360,
+          "height": 120
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "legend",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 1120
+        },
+        "data": {
+          "label": "Legend - Lab 11",
+          "boundaryType": "auth",
+          "width": 1900,
+          "height": 250
+        },
+        "style": {
+          "width": 1900,
+          "height": 250
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "leg-l0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1160
+        },
+        "data": {
+          "label": "1  a new source version   2-3  event-driven trigger (Ex 4)   4-5  Build stage -> artifact   (Source stage reads the version in step 1)",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1210
+        },
+        "data": {
+          "label": "Two roles, two blast radii: the pipeline may start ONE build and pass ONE role; the build may write its logs and one bucket",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1260
+        },
+        "data": {
+          "label": "Buildspec lives in the source zip: changing the build = a reviewed, versioned source change",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1310
+        },
+        "data": {
+          "label": "Grey Floci notes: what was observed vs recorded - green statuses on Floci were not evidence",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1160
+        },
+        "data": {
+          "label": "standard:7.0 = 404 pull access denied -> python:3.12-slim (Known Issues)",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1210
+        },
+        "data": {
+          "label": "SUCCEEDED builds ran nothing: buildspec path read as inline YAML; S3 source not delivered",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1260
+        },
+        "data": {
+          "label": "Deliberate failure: pipeline stayed green on Floci; the local runner caught it in PRE_BUILD",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 960,
+          "y": 1310
+        },
+        "data": {
+          "label": "Bugs my tests caught: port 80 vs 8080 prefix match; finally reading a stale 'passed' status",
+          "boundaryType": "auth",
+          "width": 920,
+          "height": 44
+        },
+        "style": {
+          "width": 920,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node-dev",
+        "target": "node-src",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "put-object (new version)"
+        }
+      },
+      {
+        "id": "e2",
+        "source": "node-src",
+        "target": "node-eb",
+        "sourceHandle": "top",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Event",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "Object Created (delivered on Floci)"
+        }
+      },
+      {
+        "id": "e3",
+        "source": "node-eb",
+        "target": "node-cp",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "StartPipelineExecution (unsupported target on Floci)"
+        }
+      },
+      {
+        "id": "e4",
+        "source": "node-cp",
+        "target": "node-cb",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 4,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "Build stage: StartBuild (passes usms-codebuild-role)"
+        }
+      },
+      {
+        "id": "e5",
+        "source": "node-cb",
+        "target": "node-art",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "BuildOutput zip (not written on Floci)"
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab11-upload",
+      "name": "Upload a new source version",
+      "method": "PUT",
+      "path": "/source/usms-enrolment-src.zip",
+      "startNodeId": "node-dev",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}
