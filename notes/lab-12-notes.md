@@ -40,3 +40,16 @@ Correction: revision :3 did NOT appear in the ACTIVE list - it was already INACT
 Floci finding: after deregistering :6, describe-task-definition --task-definition usms-enrolment still returned :6
 (INACTIVE) as the family's latest; real AWS returns the latest ACTIVE revision (:5). lab-12.env's revision lines
 were therefore set from the SERVICE's task definition (:5) instead of the family lookup.
+
+## Exercises - short record
+- Ex 1: nginx:1.27-alpine 21.0 MB (ECR) / 48.2 MB local vs stable-alpine 26.1 / 62.4 MB, 9 layers each; app layer 823 B.
+- Ex 2: IMMUTABLE enforced by Floci ("tag invalid ... cannot be overwritten"); buildspec now tags release-buildnumber
+  (local fallback local<UTC timestamp>); set back to MUTABLE in Ex 5.
+- Ex 3: usms-enrolment-tg-green copied from blue (ip, HTTP:80, /, 200); test listener 8080 -> green; deployment group
+  document with real listener ARNs, 0 placeholders; controller still ECS.
+- Ex 4: v3 scopes RegisterTaskDefinition to the usms-enrolment family + cpu/memory caps, denies privileged, scopes
+  UpdateService by ecs:task-definition; simulator: real request allowed, other family/oversize/privileged denied.
+  No IAM key covers image/command - closed only by network, task-role least privilege, provenance, approval.
+  My first simulation denied the legitimate request: test supplied only ecs:task-cpu (missing key = false).
+- Ex 5: execution cf458f66 recorded source revisionId 448a75df (VERSION r7); build link missing (local runner);
+  retag moved r7 to f3908257 while tasks run 835ec484 - a tag-named task definition cannot prove which bytes run.

@@ -43,6 +43,8 @@ phases:
       - echo "--- build ---"
       - USMS_RELEASE="$(tr -d '[:space:]' < VERSION)"
       - BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      - IMAGE_TAG="$USMS_RELEASE-${CODEBUILD_BUILD_NUMBER:-local$(date -u +%Y%m%d%H%M%S)}"
+      - echo "image tag (unique per build) is $IMAGE_TAG"
       - echo "release=$USMS_RELEASE builtAt=$BUILT_AT"
       - rm -rf "$ARTIFACT_DIR"
       - mkdir -p "$ARTIFACT_DIR"
@@ -57,18 +59,18 @@ phases:
           "builtAt": "$BUILT_AT",
           "buildId": "${CODEBUILD_BUILD_ID:-local}",
           "sourceVersion": "${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}",
-          "imageUri": "${IMAGE_REPO_URI}:$USMS_RELEASE"
+          "imageUri": "${IMAGE_REPO_URI}:$IMAGE_TAG"
         }
         META
       - cp config/service.json "$ARTIFACT_DIR/service.json"
       - |
         if docker info >/dev/null 2>&1; then
-          docker build -t "${IMAGE_REPO_URI}:$USMS_RELEASE" .
-          docker push "${IMAGE_REPO_URI}:$USMS_RELEASE" \
+          docker build -t "${IMAGE_REPO_URI}:$IMAGE_TAG" .
+          docker push "${IMAGE_REPO_URI}:$IMAGE_TAG" \
             || echo "push failed - the deploy stage will use the existing tag"
         fi
       - |
-        export IMAGE_URI="${IMAGE_URI:-${IMAGE_REPO_URI}:$USMS_RELEASE}"
+        export IMAGE_URI="${IMAGE_URI:-${IMAGE_REPO_URI}:$IMAGE_TAG}"
         python3 -c "import json,os; c=json.load(open('config/service.json'))['container']; json.dump([{'name': c, 'imageUri': os.environ['IMAGE_URI']}], open('$ARTIFACT_DIR/imagedefinitions.json', 'w'))"
         cat "$ARTIFACT_DIR/imagedefinitions.json"; echo
 

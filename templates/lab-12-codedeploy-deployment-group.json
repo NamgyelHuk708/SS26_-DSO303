@@ -42,12 +42,12 @@
         ],
         "prodTrafficRoute": {
           "listenerArns": [
-            "<PROD_LISTENER_ARN>"
+            "arn:aws:elasticloadbalancing:us-east-1:000000000000:listener/app/usms-enrolment-alb/a152a9ed117a4a9b/ce6f263986494732"
           ]
         },
         "testTrafficRoute": {
           "listenerArns": [
-            "<TEST_LISTENER_ARN>"
+            "arn:aws:elasticloadbalancing:us-east-1:000000000000:listener/app/usms-enrolment-alb/a152a9ed117a4a9b/905f6ef8db954518"
           ]
         }
       }
