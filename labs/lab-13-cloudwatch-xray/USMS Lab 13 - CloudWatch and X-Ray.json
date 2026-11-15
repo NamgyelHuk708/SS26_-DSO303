@@ -1,0 +1,730 @@
+{
+  "format": "aws-architecture-lab",
+  "version": 2,
+  "applicationRelease": null,
+  "savedAt": "2026-11-15T16:00:00.000Z",
+  "state": {
+    "draftName": "USMS Lab 13 - CloudWatch and X-Ray",
+    "nodes": [
+      {
+        "id": "box-region",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "AWS \u00b7 us-east-1 (Floci 2.4.0) - Lab 13: logs, metrics, traces over the transcript pipeline",
+          "boundaryType": "region",
+          "width": 1900,
+          "height": 1180
+        },
+        "style": {
+          "width": 1900,
+          "height": 1180
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -3
+      },
+      {
+        "id": "box-sys",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 60
+        },
+        "data": {
+          "label": "The system you already had (Lab 10)",
+          "boundaryType": "auth",
+          "width": 560,
+          "height": 520
+        },
+        "style": {
+          "width": 560,
+          "height": 520
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "node-reg",
+        "type": "serviceNode",
+        "position": {
+          "x": 70,
+          "y": 120
+        },
+        "data": {
+          "serviceId": "developer",
+          "label": "Registrar / me: upload a transcript (and usms-emit-telemetry.sh)",
+          "category": "Third-Party & External",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "emitter": "one USMS_EVENT log line + 2 metrics + 1 segment, joined by trace id"
+          }
+        }
+      },
+      {
+        "id": "node-s3",
+        "type": "serviceNode",
+        "position": {
+          "x": 330,
+          "y": 120
+        },
+        "data": {
+          "serviceId": "s3",
+          "label": "usms-student-data \u00b7 notification ObjectCreated transcripts/*.json -> notifier:live",
+          "category": "Storage",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "onFloci": "S3 -> Lambda delivery OBSERVED in Lab 13 (not in Lab 10)",
+            "resourceArn": "arn:aws:s3:::usms-student-data/transcripts/evidence/lab-13-probe-object.json"
+          }
+        }
+      },
+      {
+        "id": "node-fn",
+        "type": "serviceNode",
+        "position": {
+          "x": 330,
+          "y": 370
+        },
+        "data": {
+          "serviceId": "lambda",
+          "label": "usms-transcript-notifier:live -> v4 (v3 instrumented, v4 Active tracing)",
+          "category": "Compute",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "versions": "1 Lab 10 \u00b7 2 Lab 10 \u00b7 3 instrumented \u00b7 4 traced",
+            "role": "usms-lambda-exec-role + USMSObservabilityWrite",
+            "onFloci": "metric_published true; trace id = request id (no _X_AMZN_TRACE_ID)"
+          },
+          "iamRole": {
+            "id": "usms-lambda-exec-role",
+            "trustPolicy": {
+              "id": "usms-lambda-exec-role-trust",
+              "kind": "trust",
+              "statements": [
+                {
+                  "sid": "LambdaService",
+                  "effect": "Allow",
+                  "actions": [
+                    "sts:AssumeRole"
+                  ],
+                  "resources": [],
+                  "principals": [
+                    "lambda.amazonaws.com"
+                  ]
+                }
+              ]
+            },
+            "identityPolicies": [
+              {
+                "id": "USMSLambdaBasic",
+                "kind": "identity",
+                "statements": [
+                  {
+                    "sid": "ReadTranscripts",
+                    "effect": "Allow",
+                    "actions": [
+                      "s3:GetObject"
+                    ],
+                    "resources": [
+                      "arn:aws:s3:::usms-student-data/*"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "USMSObservabilityWrite",
+                "kind": "identity",
+                "statements": [
+                  {
+                    "sid": "PublishCustomMetricsInOurNamespaceOnly",
+                    "effect": "Allow",
+                    "actions": [
+                      "cloudwatch:PutMetricData"
+                    ],
+                    "resources": [
+                      "*"
+                    ]
+                  },
+                  {
+                    "sid": "SendTraces",
+                    "effect": "Allow",
+                    "actions": [
+                      "xray:PutTraceSegments",
+                      "xray:PutTelemetryRecords",
+                      "xray:GetSamplingRules",
+                      "xray:GetSamplingTargets"
+                    ],
+                    "resources": [
+                      "*"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "node-cw",
+        "type": "serviceNode",
+        "position": {
+          "x": 760,
+          "y": 370
+        },
+        "data": {
+          "serviceId": "cloudwatch",
+          "label": "CloudWatch \u00b7 logs + USMS/Application + alarms + usms-overview",
+          "category": "Management & Governance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "alarms": "lag-high (Max>2, 2/3x60s, notBreaching) \u00b7 notify-silence (Sum<1, 3x300s, BREACHING) \u00b7 composite OR",
+            "onFloci": "alarms EVALUATED: lag-high fired+recovered on data; silence fired after 15 min empty, recovered when transcripts flowed"
+          }
+        }
+      },
+      {
+        "id": "node-xr",
+        "type": "serviceNode",
+        "position": {
+          "x": 330,
+          "y": 620
+        },
+        "data": {
+          "serviceId": "xray",
+          "label": "X-Ray \u00b7 segments + sampling rule (documents only)",
+          "category": "Developer Tools",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "onFloci": "UnknownOperationException - no X-Ray API; documents validated structurally (10/10)"
+          }
+        }
+      },
+      {
+        "id": "node-role",
+        "type": "serviceNode",
+        "position": {
+          "x": 70,
+          "y": 370
+        },
+        "data": {
+          "serviceId": "iam",
+          "label": "usms-lambda-exec-role \u00b7 USMSLambdaBasic + USMSObservabilityWrite",
+          "category": "Security, Identity & Compliance",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "policy": "logs on /usms/* and /aws/lambda/usms-* (:*), PutMetricData only in USMS/Application, xray:Put*"
+          }
+        }
+      },
+      {
+        "id": "node-sns",
+        "type": "serviceNode",
+        "position": {
+          "x": 1180,
+          "y": 620
+        },
+        "data": {
+          "serviceId": "sns",
+          "label": "future alerting lab: SNS topic for the composite",
+          "category": "Application Integration",
+          "health": "healthy",
+          "az": "Edge / Global",
+          "subnet": "global",
+          "replicas": 1,
+          "multiAz": true,
+          "customConfig": {
+            "note": "not created - outputs/lab-13-alarm-actions-draft.json (Exercise 5)"
+          }
+        }
+      },
+      {
+        "id": "box-logs",
+        "type": "boundaryNode",
+        "position": {
+          "x": 640,
+          "y": 60
+        },
+        "data": {
+          "label": "LOG LAYER - retention on every USMS group: /usms/central/application 30d \u00b7 /usms/ecs/enrolment 30d \u00b7 /ecs/usms-enrolment 30d (where ECS really logs - the lab missed it) \u00b7 /aws/lambda/usms-* 14d \u00b7 /aws/codebuild/usms-* 14d. Filters: usms-notify-count (USMS_NOTIFY) and usms-central-errors (ERROR) - EVALUATED on ingestion, not retroactive",
+          "boundaryType": "auth",
+          "width": 1230,
+          "height": 130
+        },
+        "style": {
+          "width": 1230,
+          "height": 130
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-metrics",
+        "type": "boundaryNode",
+        "position": {
+          "x": 640,
+          "y": 210
+        },
+        "data": {
+          "label": "METRIC LAYER - USMS/Application: NotifyCount, CentralErrorCount (from filters) \u00b7 TranscriptsProcessed {Faculty,Stage} + {} total \u00b7 TranscriptLagSeconds {Stage} \u00b7 EdgeDenyCount {Stage}. Identity = namespace + name + COMPLETE dimension set (asking without Stage -> 0)",
+          "boundaryType": "auth",
+          "width": 1230,
+          "height": 120
+        },
+        "style": {
+          "width": 1230,
+          "height": 120
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-alarms",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1060,
+          "y": 370
+        },
+        "data": {
+          "label": "ALARMS - lag-high --+ OR +-- notify-silence  ->  usms-transcript-pipeline-down (one incident, one page). Dashboard usms-overview: 5 widgets, 24 cols, no overlap",
+          "boundaryType": "auth",
+          "width": 810,
+          "height": 110
+        },
+        "style": {
+          "width": 810,
+          "height": 110
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-trace",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 800
+        },
+        "data": {
+          "label": "TRACE LAYER (documents) - trace 1-6af9c034-...: segment notifier 120 ms (4 annotations) > s3-head-object (aws) 18 ms, render-pdf (remote) 74 ms, put-metric-data (aws) 11 ms; segment usms-student-data http 200, parent_id set. Sampling: priority 1000, reservoir 2/s then 10%",
+          "boundaryType": "auth",
+          "width": 1080,
+          "height": 120
+        },
+        "style": {
+          "width": 1080,
+          "height": 120
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "box-fixes",
+        "type": "boundaryNode",
+        "position": {
+          "x": 30,
+          "y": 940
+        },
+        "data": {
+          "label": "Fixed during the lab: role ARNs -> names \u00b7 CLI shorthand cannot carry JSON log messages (Step 7, emitter) \u00b7 USMS_METRIC_NAMESPACE collided with Lab 6 -> USMS_APP_METRIC_NAMESPACE \u00b7 verify JMESPath 'total' check \u00b7 --filter-name-prefix needs a log group",
+          "boundaryType": "auth",
+          "width": 1080,
+          "height": 100
+        },
+        "style": {
+          "width": 1080,
+          "height": 100
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "legend",
+        "type": "boundaryNode",
+        "position": {
+          "x": 0,
+          "y": 1200
+        },
+        "data": {
+          "label": "Legend - Lab 13",
+          "boundaryType": "auth",
+          "width": 1900,
+          "height": 250
+        },
+        "style": {
+          "width": 1900,
+          "height": 250
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": -1
+      },
+      {
+        "id": "leg-l0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1240
+        },
+        "data": {
+          "label": "1-3 one transcript: upload -> S3 event -> notifier:live -> log line + metric   4 the S3 read   5 trace (documents)   6 emitter   7 future SNS",
+          "boundaryType": "auth",
+          "width": 960,
+          "height": 44
+        },
+        "style": {
+          "width": 960,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1290
+        },
+        "data": {
+          "label": "Logs are text, metrics are numbers - a metric filter is the bridge (defaultValue per NON-matching event, not per empty period)",
+          "boundaryType": "auth",
+          "width": 960,
+          "height": 44
+        },
+        "style": {
+          "width": 960,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1340
+        },
+        "data": {
+          "label": "notBreaching on lag (quiet nights are fine) vs BREACHING on silence (the absence IS the incident)",
+          "boundaryType": "auth",
+          "width": 960,
+          "height": 44
+        },
+        "style": {
+          "width": 960,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-l3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 20,
+          "y": 1390
+        },
+        "data": {
+          "label": "Cardinality is cost: Faculty (few values) as a dimension; student id only in logs / annotations",
+          "boundaryType": "auth",
+          "width": 960,
+          "height": 44
+        },
+        "style": {
+          "width": 960,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r0",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1000,
+          "y": 1240
+        },
+        "data": {
+          "label": "Floci observed: filters evaluated, alarms + composite evaluated, S3->Lambda, data survived restart",
+          "boundaryType": "auth",
+          "width": 880,
+          "height": 44
+        },
+        "style": {
+          "width": 880,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r1",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1000,
+          "y": 1290
+        },
+        "data": {
+          "label": "Floci absent: X-Ray API, Logs Insights (path B used), automatic AWS metrics",
+          "boundaryType": "auth",
+          "width": 880,
+          "height": 44
+        },
+        "style": {
+          "width": 880,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r2",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1000,
+          "y": 1340
+        },
+        "data": {
+          "label": "Silence alarm: OK at 14:30 (14:15 bucket still in window) -> ALARM 14:50 -> OK after 3 uploads",
+          "boundaryType": "auth",
+          "width": 880,
+          "height": 44
+        },
+        "style": {
+          "width": 880,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      },
+      {
+        "id": "leg-r3",
+        "type": "boundaryNode",
+        "position": {
+          "x": 1000,
+          "y": 1390
+        },
+        "data": {
+          "label": "Alarm states proven by set-alarm-state AND by real data; history kept",
+          "boundaryType": "auth",
+          "width": 880,
+          "height": 44
+        },
+        "style": {
+          "width": 880,
+          "height": 44
+        },
+        "draggable": true,
+        "selectable": true,
+        "zIndex": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node-reg",
+        "target": "node-s3",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 1,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "put-object transcripts/evidence/*.json"
+        }
+      },
+      {
+        "id": "e2",
+        "source": "node-s3",
+        "target": "node-fn",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "Event",
+          "stepNumber": 2,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "ObjectCreated -> live"
+        }
+      },
+      {
+        "id": "e3",
+        "source": "node-fn",
+        "target": "node-cw",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 3,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "stdout -> log group; put_metric_data"
+        }
+      },
+      {
+        "id": "e4",
+        "source": "node-fn",
+        "target": "node-s3",
+        "sourceHandle": "right",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 4,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "head_object"
+        }
+      },
+      {
+        "id": "e5",
+        "source": "node-fn",
+        "target": "node-xr",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 5,
+          "interactionType": "synchronous",
+          "isCriticalDependency": true,
+          "timeoutMs": 3000,
+          "relationship": "request",
+          "label": "PutTraceSegments (no API on Floci)"
+        }
+      },
+      {
+        "id": "e6",
+        "source": "node-reg",
+        "target": "node-cw",
+        "sourceHandle": "top",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 6,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "emitter: log + metrics"
+        }
+      },
+      {
+        "id": "e8",
+        "source": "node-fn",
+        "target": "node-role",
+        "sourceHandle": "left",
+        "targetHandle": "right",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 8,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "authorization",
+          "label": "executes as"
+        }
+      },
+      {
+        "id": "e7",
+        "source": "node-cw",
+        "target": "node-sns",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "type": "custom",
+        "data": {
+          "protocol": "HTTPS",
+          "stepNumber": 7,
+          "interactionType": "asynchronous",
+          "isCriticalDependency": false,
+          "timeoutMs": 3000,
+          "relationship": "dependency",
+          "traversal": "dependency",
+          "dependencyRequired": false,
+          "label": "composite action (future lab)"
+        }
+      }
+    ],
+    "scenario": {
+      "id": "lab13-upload",
+      "name": "A transcript upload produces a log line and a metric",
+      "method": "PUT",
+      "path": "/transcripts/evidence/x.json",
+      "startNodeId": "node-reg",
+      "trafficLevel": "normal"
+    },
+    "simulationResult": null,
+    "activeFailures": [],
+    "activeLabReference": null,
+    "activeChallengeId": null,
+    "challengeResult": null,
+    "appMode": "design",
+    "selectedNodeId": null,
+    "selectedEdgeId": null,
+    "activeStepIndex": null,
+    "playbackSpeed": 1,
+    "highlightTaskFlow": false,
+    "showNaclSideColumn": false,
+    "viewport": null
+  }
+}
