@@ -28,3 +28,5 @@ __pycache__/
 labs/lab-11-cicd/app/dist/
 labs/lab-11-cicd/app-results/dist/
 docker-compose.yml.bak-*
+templates/lab-12-pipeline-current.json
+templates/lab-12-taskdef-base.json
