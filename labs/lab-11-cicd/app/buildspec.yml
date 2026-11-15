@@ -4,6 +4,7 @@ env:
   variables:
     SERVICE_NAME: "enrolment"
     ARTIFACT_DIR: "dist"
+    IMAGE_REPO_URI: "nginx"
 
 phases:
 
@@ -11,6 +12,7 @@ phases:
     commands:
       - echo "--- install ---"
       - python3 --version
+      - docker --version || echo "no docker client in this build image"
       - sed --version 2>/dev/null | head -1 || echo "BSD sed"
 
   pre_build:
@@ -26,6 +28,15 @@ phases:
           exit 1
         }
       - echo "configuration validated"
+      - |
+        if docker info >/dev/null 2>&1; then
+          echo "docker daemon reachable - this build will build and push an image"
+          aws ecr get-login-password --region "${AWS_REGION_COURSE:-us-east-1}" \
+            | docker login --username AWS --password-stdin "${IMAGE_REPO_URI%%/*}" \
+            || echo "docker login failed - continuing; the image must already exist"
+        else
+          echo "no docker daemon in this build container - skipping the image build"
+        fi
 
   build:
     commands:
@@ -45,12 +56,19 @@ phases:
           "release": "$USMS_RELEASE",
           "builtAt": "$BUILT_AT",
           "buildId": "${CODEBUILD_BUILD_ID:-local}",
-          "sourceVersion": "${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}"
+          "sourceVersion": "${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}",
+          "imageUri": "${IMAGE_REPO_URI}:$USMS_RELEASE"
         }
         META
       - cp config/service.json "$ARTIFACT_DIR/service.json"
       - |
-        export IMAGE_URI="${IMAGE_URI:-public.ecr.aws/nginx/nginx:stable-alpine}"
+        if docker info >/dev/null 2>&1; then
+          docker build -t "${IMAGE_REPO_URI}:$USMS_RELEASE" .
+          docker push "${IMAGE_REPO_URI}:$USMS_RELEASE" \
+            || echo "push failed - the deploy stage will use the existing tag"
+        fi
+      - |
+        export IMAGE_URI="${IMAGE_URI:-${IMAGE_REPO_URI}:$USMS_RELEASE}"
         python3 -c "import json,os; c=json.load(open('config/service.json'))['container']; json.dump([{'name': c, 'imageUri': os.environ['IMAGE_URI']}], open('$ARTIFACT_DIR/imagedefinitions.json', 'w'))"
         cat "$ARTIFACT_DIR/imagedefinitions.json"; echo
 
@@ -61,6 +79,7 @@ phases:
       - SMOKE=0; bash tests/smoke.sh || SMOKE=$?; echo "$SMOKE" > /tmp/usms-smoke-status; exit "$SMOKE"
       - ls -l "$ARTIFACT_DIR"
       - cat "$ARTIFACT_DIR/build-metadata.json"
+      - cat "$ARTIFACT_DIR/imagedefinitions.json"
     finally:
       - |
         STATUS=$(cat /tmp/usms-smoke-status 2>/dev/null || echo "not-run")

@@ -1,0 +1,78 @@
+version: 0.2
+
+env:
+  variables:
+    SERVICE_NAME: "enrolment"
+    ARTIFACT_DIR: "dist"
+
+phases:
+
+  install:
+    commands:
+      - echo "--- install ---"
+      - python3 --version
+      - sed --version 2>/dev/null | head -1 || echo "BSD sed"
+
+  pre_build:
+    commands:
+      - echo "--- pre_build ---"
+      - test -f VERSION || { echo "VERSION file is missing"; exit 1; }
+      - python3 -m json.tool config/service.json > /dev/null
+      - |
+        python3 -c "import json,sys; c=json.load(open('config/service.json')).get('container'); sys.exit(0) if c == 'enrolment-api' else sys.exit('container mismatch: expected enrolment-api, found %s in config/service.json' % c)"
+      - |
+        grep -qE '"port": 80([^0-9]|$)' config/service.json || {
+          echo "config/service.json must say \"port\": 80 - the ALB target group and the task definition both listen on 80. Fix the port in config/service.json and upload the source again."
+          exit 1
+        }
+      - echo "configuration validated"
+
+  build:
+    commands:
+      - echo "--- build ---"
+      - USMS_RELEASE="$(tr -d '[:space:]' < VERSION)"
+      - BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      - echo "release=$USMS_RELEASE builtAt=$BUILT_AT"
+      - rm -rf "$ARTIFACT_DIR"
+      - mkdir -p "$ARTIFACT_DIR"
+      - cp -R src/. "$ARTIFACT_DIR"/
+      - sed -i.bak -e "s|__RELEASE__|$USMS_RELEASE|g" -e "s|__BUILT_AT__|$BUILT_AT|g" "$ARTIFACT_DIR/index.html"
+      - rm -f "$ARTIFACT_DIR/index.html.bak"
+      - |
+        cat > "$ARTIFACT_DIR/build-metadata.json" << META
+        {
+          "service": "$SERVICE_NAME",
+          "release": "$USMS_RELEASE",
+          "builtAt": "$BUILT_AT",
+          "buildId": "${CODEBUILD_BUILD_ID:-local}",
+          "sourceVersion": "${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}"
+        }
+        META
+      - cp config/service.json "$ARTIFACT_DIR/service.json"
+      - |
+        export IMAGE_URI="${IMAGE_URI:-public.ecr.aws/nginx/nginx:stable-alpine}"
+        python3 -c "import json,os; c=json.load(open('config/service.json'))['container']; json.dump([{'name': c, 'imageUri': os.environ['IMAGE_URI']}], open('$ARTIFACT_DIR/imagedefinitions.json', 'w'))"
+        cat "$ARTIFACT_DIR/imagedefinitions.json"; echo
+
+  post_build:
+    commands:
+      - echo "--- post_build ---"
+      - rm -f /tmp/usms-smoke-status
+      - SMOKE=0; bash tests/smoke.sh || SMOKE=$?; echo "$SMOKE" > /tmp/usms-smoke-status; exit "$SMOKE"
+      - ls -l "$ARTIFACT_DIR"
+      - cat "$ARTIFACT_DIR/build-metadata.json"
+    finally:
+      - |
+        STATUS=$(cat /tmp/usms-smoke-status 2>/dev/null || echo "not-run")
+        RESULT=$([ "$STATUS" = "0" ] && echo passed || echo FAILED)
+        mkdir -p "$ARTIFACT_DIR"
+        echo "release=$(tr -d '[:space:]' < VERSION) tests=$RESULT exit=$STATUS at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$ARTIFACT_DIR/build-summary.txt"
+        cat "$ARTIFACT_DIR/build-summary.txt"
+
+artifacts:
+  base-directory: dist
+  files:
+    - '**/*'
+
+cache:
+  paths: []
